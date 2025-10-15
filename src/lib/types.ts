@@ -19,6 +19,9 @@ export interface KeyPressConfig {
 
   /** Whether to prevent default browser behavior */
   preventDefault?: boolean;
+
+  /** Component that registered this handler (for debugging) */
+  component?: string;
 }
 
 /**
@@ -28,9 +31,6 @@ export interface ShortcutHandler
   extends Required<Omit<KeyPressConfig, "enabled" | "preventDefault">> {
   /** Unique identifier for this handler */
   id: string;
-
-  /** Component that registered this handler (for debugging) */
-  component?: string;
 
   /** Whether the shortcut is currently enabled */
   enabled: boolean;

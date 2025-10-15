@@ -3,20 +3,31 @@ import type { KeyPressConfig, ShortcutHandler } from "./types";
 import { normalizeShortcut, normalizeEvent } from "./key-normalization";
 
 export class ChordCore {
-  handlers: Map<string, ShortcutHandler> = new Map();
-  subscribers = new Set();
+  /** Map of handler ID to handler object */
+  private handlers: Map<string, ShortcutHandler> = new Map();
+  /** Map of normalized key string to array of handler IDs */
+  private keyToHandlerIds: Map<string, string[]> = new Map();
+
+  /** Counter for generating unique IDs */
+  private idCounter = 0;
+
+  /** Callbacks to notify when registry changes */
+  private subscribers = new Set();
 
   constructor() {
     this.addListeners();
   }
 
-  registerHandler(config: KeyPressConfig) {
-    // Normalize the key on registration for cross-platform compatibility
-    const normalizedKey = normalizeShortcut(config.key);
+  private generateId() {
+    return `id_${++this.idCounter}`;
+  }
 
+  registerHandler(config: KeyPressConfig) {
+    const normalizedKey = normalizeShortcut(config.key);
     console.log("[REGISTER]: registering", config.key, "→", normalizedKey);
 
-    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = this.generateId();
+
     const handler: ShortcutHandler = {
       id,
       key: normalizedKey, // Store normalized key
@@ -26,9 +37,21 @@ export class ChordCore {
       enabled: config.enabled ?? DEFAULTS.ENABLED,
       preventDefault: config.preventDefault ?? DEFAULTS.PREVENT_DEFAULT,
       registeredAt: Date.now(),
+      component: config.component ?? "Undefined",
     };
 
     this.handlers.set(id, handler);
+
+    // Update key mapping
+    const existingIds = this.keyToHandlerIds.get(normalizedKey) || [];
+    this.keyToHandlerIds.set(normalizedKey, [...existingIds, id]);
+
+    // Log conflict warning in development
+    if (process.env.NODE_ENV === "development" && existingIds.length > 0) {
+      this.warnConflict(normalizedKey, handler);
+    }
+
+    // Notify listeners
     this.notifySubscribers();
 
     return id;
@@ -36,10 +59,22 @@ export class ChordCore {
 
   unregisterHandler(id: string) {
     const handler = this.handlers.get(id);
-    if (handler) {
-      console.log("[UNREGISTER]: unregistering", handler.key);
-    }
+    if (!handler) return;
+    console.log("[UNREGISTER]: unregistering", handler.key);
     this.handlers.delete(id);
+
+    // Remove from key mapping
+    const keyString = handler.key;
+    const ids = this.keyToHandlerIds.get(keyString);
+    if (ids) {
+      const filtered = ids.filter((hId) => hId !== id);
+      if (filtered.length === 0) {
+        this.keyToHandlerIds.delete(keyString);
+      } else {
+        this.keyToHandlerIds.set(keyString, filtered);
+      }
+    }
+
     this.notifySubscribers();
   }
 
@@ -48,13 +83,15 @@ export class ChordCore {
   }
 
   /**
-   * Find all handlers that match a normalized key
-   * Returns array to support conflict detection
+   * Get first handler for a specific key combination
    */
-  private getHandlersByKey(normalizedKey: string): ShortcutHandler[] {
-    return Array.from(this.handlers.values()).filter(
-      (handler) => handler.key === normalizedKey && handler.enabled
-    );
+  private getHandlerForKey(normalizedKey: string) {
+    const ids = this.keyToHandlerIds.get(normalizedKey) || [];
+
+    const handlers = ids
+      .map((id) => this.handlers.get(id))
+      .filter((h): h is ShortcutHandler => h !== undefined && h.enabled);
+    return handlers.length > 0 ? handlers[0] : undefined;
   }
 
   private handleKeyDown(event: KeyboardEvent) {
@@ -62,27 +99,13 @@ export class ChordCore {
     const normalizedKey = normalizeEvent(event);
 
     // Find all matching handlers (can be multiple if conflicts exist)
-    const handlers = this.getHandlersByKey(normalizedKey);
+    const handler = this.getHandlerForKey(normalizedKey);
+    if (!handler) return;
 
-    if (handlers.length === 0) {
-      return; // No handler registered for this key
+    if (handler.preventDefault) {
+      event.preventDefault();
     }
-
-    // Warn about conflicts in development
-    if (handlers.length > 1 && process.env.NODE_ENV !== "production") {
-      console.warn(
-        `[CONFLICT]: Multiple handlers registered for "${normalizedKey}":`,
-        handlers.map((h) => h.description)
-      );
-    }
-
-    // Execute all handlers (conflict resolution can be added later)
-    for (const handler of handlers) {
-      if (handler.preventDefault) {
-        event.preventDefault();
-      }
-      handler.onPress();
-    }
+    handler.onPress();
   }
 
   /**
@@ -131,5 +154,26 @@ export class ChordCore {
     for (const callback of this.subscribers) {
       (callback as () => void)();
     }
+  }
+
+  /**
+   * Warn about conflicts in development mode
+   */
+  private warnConflict(keyString: string, newHandler: ShortcutHandler): void {
+    const existingIds = this.keyToHandlerIds.get(keyString) || [];
+    const existingHandlers = existingIds
+      .map((id) => this.handlers.get(id))
+      .filter((h): h is ShortcutHandler => h !== undefined);
+
+    console.warn(
+      `[Chord] Shortcut conflict detected for "${keyString}":\n` +
+        `  Existing handler${existingHandlers.length > 1 ? "s" : ""}:\n` +
+        existingHandlers
+          .map((h) => `    - ${h.description}${h.component ? ` (${h.component})` : ""}`)
+          .join("\n") +
+        `\n  New handler:\n` +
+        `    - ${newHandler.description}${newHandler.component ? ` (${newHandler.component})` : ""}\n` +
+        `  Only the first registered handler will be executed.`,
+    );
   }
 }
