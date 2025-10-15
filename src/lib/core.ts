@@ -1,5 +1,6 @@
 import { DEFAULTS } from "./constants";
 import type { KeyPressConfig, ShortcutHandler } from "./types";
+import { normalizeShortcut, normalizeEvent } from "./key-normalization";
 
 export class ChordCore {
   handlers: Map<string, ShortcutHandler> = new Map();
@@ -9,19 +10,16 @@ export class ChordCore {
     this.addListeners();
   }
 
-  /**
-   * Takes a keypress config options object and returns a memoized version that stays consistent across multiple calls.
-   * @param config KeyPressConfig
-   */
-  getOptions(config: KeyPressConfig) {}
-
   registerHandler(config: KeyPressConfig) {
-    console.log("[REGISTER]: registering", config.key);
+    // Normalize the key on registration for cross-platform compatibility
+    const normalizedKey = normalizeShortcut(config.key);
+
+    console.log("[REGISTER]: registering", config.key, "→", normalizedKey);
+
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const normalizedKey = normalizeKeyString(config.key);
     const handler: ShortcutHandler = {
       id,
-      key: normalizedKey,
+      key: normalizedKey, // Store normalized key
       description: config.description,
       category: config.category || DEFAULTS.DEFAULT_CATEGORY,
       onPress: config.onPress,
@@ -31,6 +29,7 @@ export class ChordCore {
     };
 
     this.handlers.set(id, handler);
+    this.notifySubscribers();
 
     return id;
   }
@@ -41,76 +40,96 @@ export class ChordCore {
       console.log("[UNREGISTER]: unregistering", handler.key);
     }
     this.handlers.delete(id);
+    this.notifySubscribers();
   }
 
   addListeners() {
     document.addEventListener("keydown", this.handleKeyDown.bind(this));
-    document.addEventListener("keyup", this.handleKeyUp.bind(this));
   }
 
-  private getHandlerByKey(key: string): ShortcutHandler | undefined {
-    const normalizedKey = normalizeKeyString(key);
-    return Array.from(this.handlers.values()).find((handler) => handler.key === normalizedKey);
+  /**
+   * Find all handlers that match a normalized key
+   * Returns array to support conflict detection
+   */
+  private getHandlersByKey(normalizedKey: string): ShortcutHandler[] {
+    return Array.from(this.handlers.values()).filter(
+      (handler) => handler.key === normalizedKey && handler.enabled
+    );
   }
 
   private handleKeyDown(event: KeyboardEvent) {
-    const key = event.key;
-    const handler = this.getHandlerByKey(key);
-    if (handler) {
+    // Normalize the keyboard event to match registered shortcuts
+    const normalizedKey = normalizeEvent(event);
+
+    // Find all matching handlers (can be multiple if conflicts exist)
+    const handlers = this.getHandlersByKey(normalizedKey);
+
+    if (handlers.length === 0) {
+      return; // No handler registered for this key
+    }
+
+    // Warn about conflicts in development
+    if (handlers.length > 1 && process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[CONFLICT]: Multiple handlers registered for "${normalizedKey}":`,
+        handlers.map((h) => h.description)
+      );
+    }
+
+    // Execute all handlers (conflict resolution can be added later)
+    for (const handler of handlers) {
+      if (handler.preventDefault) {
+        event.preventDefault();
+      }
       handler.onPress();
     }
   }
 
-  private handleKeyUp(event: KeyboardEvent) {
-    const key = event.key;
-    const handler = this.handlers.get(key);
-    if (handler) {
-      handler.onPress();
-    }
+  /**
+   * Get all registered handlers
+   */
+  getHandlers(): ShortcutHandler[] {
+    return Array.from(this.handlers.values());
   }
 
-  subscribe(callback): () => void {
+  /**
+   * Get all conflicts (keys with multiple handlers)
+   */
+  getConflicts() {
+    const keyMap = new Map<string, ShortcutHandler[]>();
+
+    // Group handlers by normalized key
+    for (const handler of this.handlers.values()) {
+      const existing = keyMap.get(handler.key) || [];
+      existing.push(handler);
+      keyMap.set(handler.key, existing);
+    }
+
+    // Filter to only conflicts (2+ handlers)
+    const conflicts = [];
+    for (const [key, handlers] of keyMap.entries()) {
+      if (handlers.length > 1) {
+        conflicts.push({ key, handlers });
+      }
+    }
+
+    return conflicts;
+  }
+
+  /**
+   * Subscribe to registry changes
+   */
+  subscribe(callback: () => void): () => void {
     this.subscribers.add(callback);
     return () => this.subscribers.delete(callback);
   }
-}
 
-/**
- * Normalizes a keyboard event to a key string for cross-platform compatibility
- */
-function normalizeKeyEvent(event: KeyboardEvent): string {
-  const parts: string[] = [];
-
-  // Add modifiers in consistent order
-  if (event.metaKey) parts.push("meta");
-  if (event.ctrlKey) parts.push("ctrl");
-  if (event.altKey) parts.push("alt");
-  if (event.shiftKey) parts.push("shift");
-
-  // Add the main key (lowercase for consistency)
-  parts.push(event.key.toLowerCase());
-
-  return parts.join("+");
-}
-
-/**
- * Normalizes a key string from config (e.g., "cmd+k" -> "meta+k")
- */
-function normalizeKeyString(keyString: string): string {
-  const parts = keyString
-    .toLowerCase()
-    .split("+")
-    .map((p) => p.trim());
-
-  // Replace cmd/command with meta
-  const normalized = parts.map((part) => {
-    if (part === "cmd" || part === "command") return "meta";
-    return part;
-  });
-
-  // Sort modifiers consistently
-  const modifiers = normalized.filter((p) => ["meta", "ctrl", "alt", "shift"].includes(p)).sort();
-  const key = normalized.find((p) => !["meta", "ctrl", "alt", "shift"].includes(p)) || "";
-
-  return [...modifiers, key].join("+");
+  /**
+   * Notify subscribers of changes
+   */
+  private notifySubscribers() {
+    for (const callback of this.subscribers) {
+      (callback as () => void)();
+    }
+  }
 }

@@ -54,7 +54,13 @@ export interface ShortcutConflict {
 }
 
 /**
+ * Platform types for key normalization
+ */
+export type Platform = "darwin" | "win32" | "linux";
+
+/**
  * Normalized key representation for cross-platform compatibility
+ * Used internally for manipulation before serialization
  */
 export interface NormalizedKey {
   /** The main key (e.g., "k", "Enter", "ArrowUp") */
@@ -66,6 +72,12 @@ export interface NormalizedKey {
   shift: boolean;
   alt: boolean;
 }
+
+/**
+ * Final normalized key string format for comparison and storage
+ * Example: "ctrl+shift+k", "meta+s", "escape"
+ */
+export type NormalizedKeyString = string;
 
 /**
  * Configuration options for KeyPressProvider

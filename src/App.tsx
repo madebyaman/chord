@@ -4,13 +4,24 @@ import { useKeyPress } from "./lib/use-keypress";
 
 function App() {
   const [count, setCount] = useState(0);
+  const [, rerender] = useState({});
+
   useKeyPress({
-    key: "Enter",
+    key: "ctrl+s",
     onPress: () => setCount((count) => count + 1),
     description: "Increment the count",
   });
+  useKeyPress({
+    key: "Escape",
+    onPress: () => setCount((count) => count - 1),
+    description: "Increment the count",
+  });
 
-  return <div>The count is {count}</div>;
+  return (
+    <div>
+      The count is {count}. <button onClick={() => rerender({})}>Unrelated change</button>
+    </div>
+  );
 }
 
 export default App;
