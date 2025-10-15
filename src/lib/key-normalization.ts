@@ -130,39 +130,23 @@ export function parseShortcut(shortcut: string): string[] {
  */
 export function validateShortcut(parts: string[]): void {
   const hasMod = parts.includes("mod");
-  const hasCtrl =
-    parts.includes("ctrl") ||
-    parts.includes("control") ||
-    parts.includes("ctrl");
-  const hasMeta =
-    parts.includes("meta") ||
-    parts.includes("cmd") ||
-    parts.includes("command");
+  const hasCtrl = parts.includes("ctrl") || parts.includes("control") || parts.includes("ctrl");
+  const hasMeta = parts.includes("meta") || parts.includes("cmd") || parts.includes("command");
 
   if (hasMod && hasCtrl) {
     throw new Error(
-      `Invalid shortcut: Cannot use 'mod' with 'ctrl' (resolves to 'ctrl+ctrl' on Windows/Linux)`
+      `Invalid shortcut: Cannot use 'mod' with 'ctrl' (resolves to 'ctrl+ctrl' on Windows/Linux)`,
     );
   }
 
   if (hasMod && hasMeta) {
     throw new Error(
-      `Invalid shortcut: Cannot use 'mod' with 'meta'/'cmd' (resolves to 'meta+meta' on macOS)`
+      `Invalid shortcut: Cannot use 'mod' with 'meta'/'cmd' (resolves to 'meta+meta' on macOS)`,
     );
   }
 
   // Find the actual key (non-modifier)
-  const modifiers = [
-    "mod",
-    "ctrl",
-    "control",
-    "meta",
-    "cmd",
-    "command",
-    "alt",
-    "option",
-    "shift",
-  ];
+  const modifiers = ["mod", "ctrl", "control", "meta", "cmd", "command", "alt", "option", "shift"];
   const keys = parts.filter((part) => !modifiers.includes(part));
 
   if (keys.length === 0) {
@@ -170,9 +154,7 @@ export function validateShortcut(parts: string[]): void {
   }
 
   if (keys.length > 1) {
-    throw new Error(
-      `Invalid shortcut: Multiple keys specified (${keys.join(", ")})`
-    );
+    throw new Error(`Invalid shortcut: Multiple keys specified (${keys.join(", ")})`);
   }
 }
 
@@ -192,7 +174,7 @@ export function validateShortcut(parts: string[]): void {
  */
 export function normalizeShortcut(
   shortcut: string,
-  platform: Platform = getPlatform()
+  platform: Platform = getPlatform(),
 ): NormalizedKeyString {
   const parts = parseShortcut(shortcut);
 
@@ -223,7 +205,8 @@ export function normalizeShortcut(
       case "meta":
       case "cmd":
       case "command":
-        normalized.meta = true;
+        if (platform !== "darwin" && ["cmd", "command"].includes(part)) normalized.ctrl = true;
+        else normalized.meta = true;
         break;
 
       // Ctrl aliases
@@ -261,9 +244,7 @@ export function normalizeShortcut(
 
   const uniqueModifiers = [...new Set(activeModifiers)];
   if (activeModifiers.length !== uniqueModifiers.length) {
-    throw new Error(
-      `Invalid shortcut '${shortcut}': Duplicate modifiers detected`
-    );
+    throw new Error(`Invalid shortcut '${shortcut}': Duplicate modifiers detected`);
   }
 
   return serializeNormalizedKey(normalized);
@@ -310,7 +291,7 @@ export function normalizeEvent(event: KeyboardEvent): NormalizedKeyString {
 export function areShortcutsEqual(
   shortcut1: string,
   shortcut2: string,
-  platform?: Platform
+  platform?: Platform,
 ): boolean {
   return normalizeShortcut(shortcut1, platform) === normalizeShortcut(shortcut2, platform);
 }
