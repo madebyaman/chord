@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import type { KeyPressConfig } from "./types";
-import { useKeyPressContext } from "./provider";
+import type { KeyPressConfig } from "../types";
+import { useKeyPressContext } from "../context/provider";
 
 // export function useKeyPress(config: KeyPressConfig) {
 //   const context = useKeyPressContext();

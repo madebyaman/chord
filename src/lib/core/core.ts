@@ -1,12 +1,12 @@
-import { DEFAULTS } from "./constants";
-import type { KeyPressConfig, ShortcutHandler } from "./types";
-import { normalizeShortcut, normalizeEvent } from "./key-normalization";
+import { DEFAULTS } from "../utils/constants";
+import type { KeyPressConfig, ShortcutHandler } from "../types";
+import { normalizeShortcut, normalizeEvent } from "../utils/key-normalization";
 
 export class ChordCore {
   /** Map of handler ID to handler object */
-  private handlers: Map<string, ShortcutHandler> = new Map();
+  private handlers: Map<number, ShortcutHandler> = new Map();
   /** Map of normalized key string to array of handler IDs */
-  private keyToHandlerIds: Map<string, string[]> = new Map();
+  private keyToHandlerIds: Map<string, number[]> = new Map();
 
   /** Counter for generating unique IDs */
   private idCounter = 0;
@@ -19,10 +19,11 @@ export class ChordCore {
   }
 
   private generateId() {
-    return `id_${++this.idCounter}`;
+    return ++this.idCounter;
   }
 
   registerHandler(config: KeyPressConfig) {
+    if (config.enabled === false) return;
     const normalizedKey = normalizeShortcut(config.key);
     console.log("[REGISTER]: registering", config.key, "→", normalizedKey);
 
@@ -57,7 +58,8 @@ export class ChordCore {
     return id;
   }
 
-  unregisterHandler(id: string) {
+  unregisterHandler(id: number | undefined) {
+    if (!id) return;
     const handler = this.handlers.get(id);
     if (!handler) return;
     console.log("[UNREGISTER]: unregistering", handler.key);

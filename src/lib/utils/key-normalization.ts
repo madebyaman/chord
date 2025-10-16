@@ -1,4 +1,4 @@
-import type { NormalizedKey, NormalizedKeyString, Platform } from "./types";
+import type { NormalizedKey, NormalizedKeyString, Platform } from "../types";
 
 /**
  * Get the current platform using modern APIs

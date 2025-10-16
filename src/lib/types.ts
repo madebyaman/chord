@@ -22,6 +22,38 @@ export interface KeyPressConfig {
 
   /** Component that registered this handler (for debugging) */
   component?: string;
+
+  /** Optional scope for priority resolution */
+  scope?: string;
+}
+
+/**
+ * Configuration for a key sequence handler
+ */
+export interface KeySequenceConfig {
+  /** Array of keys in sequence (e.g., ["g", "h"] or ["mod+k", "mod+b"]) */
+  sequence: string[];
+
+  /** Human-readable description shown in help modal */
+  description: string;
+
+  /** Handler function to execute when sequence completes */
+  onComplete: () => void;
+
+  /** Optional category for grouping in help modal */
+  category?: string;
+
+  /** Whether the sequence is currently enabled */
+  enabled?: boolean;
+
+  /** Timeout in milliseconds before sequence resets (default: 1000) */
+  timeout?: number;
+
+  /** Component that registered this sequence (for debugging) */
+  component?: string;
+
+  /** Optional scope for priority resolution */
+  scope?: string;
 }
 
 /**
@@ -30,7 +62,7 @@ export interface KeyPressConfig {
 export interface ShortcutHandler
   extends Required<Omit<KeyPressConfig, "enabled" | "preventDefault">> {
   /** Unique identifier for this handler */
-  id: string;
+  id: number;
 
   /** Whether the shortcut is currently enabled */
   enabled: boolean;
@@ -91,6 +123,18 @@ export interface KeyPressProviderProps {
 
   /** Theme for help modal (default: "light") */
   theme?: "light" | "dark";
+
+  /** Whether to show conflicts in console and help modal (default: true in dev) */
+  showConflicts?: boolean;
+
+  /** Conflict resolution strategy (default: "warn") */
+  conflictResolution?: "warn" | "firstWins" | "lastWins" | "scopePriority" | "error";
+
+  /** Platform override for testing (auto-detected by default) */
+  platform?: Platform;
+
+  /** Active scope for scopePriority resolution */
+  activeScope?: string;
 }
 
 /**

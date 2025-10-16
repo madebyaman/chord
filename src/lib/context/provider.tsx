@@ -1,6 +1,6 @@
-import { ChordCore } from "./core";
+import { ChordCore } from "../core/core";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import type { KeyPressProviderProps } from "./types";
+import type { KeyPressProviderProps } from "../types";
 
 const ChordContext = createContext<ChordCore | null>(null);
 
@@ -27,4 +27,4 @@ export function useKeyPressContext() {
   return context;
 }
 
-export default KeyPressProvider;
+export { KeyPressProvider };
