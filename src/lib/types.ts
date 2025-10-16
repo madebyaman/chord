@@ -22,9 +22,6 @@ export interface KeyPressConfig {
 
   /** Component that registered this handler (for debugging) */
   component?: string;
-
-  /** Optional scope for priority resolution */
-  scope?: string;
 }
 
 /**
@@ -51,9 +48,6 @@ export interface KeySequenceConfig {
 
   /** Component that registered this sequence (for debugging) */
   component?: string;
-
-  /** Optional scope for priority resolution */
-  scope?: string;
 }
 
 /**
@@ -118,23 +112,8 @@ export interface KeyPressProviderProps {
   /** Children components */
   children: React.ReactNode;
 
-  /** Key to open help modal (default: "?") */
-  helpKey?: string;
-
-  /** Theme for help modal (default: "light") */
-  theme?: "light" | "dark";
-
-  /** Whether to show conflicts in console and help modal (default: true in dev) */
-  showConflicts?: boolean;
-
   /** Conflict resolution strategy (default: "warn") */
   conflictResolution?: "warn" | "firstWins" | "lastWins" | "scopePriority" | "error";
-
-  /** Platform override for testing (auto-detected by default) */
-  platform?: Platform;
-
-  /** Active scope for scopePriority resolution */
-  activeScope?: string;
 }
 
 /**
@@ -161,4 +140,15 @@ export interface KeyPressContextValue {
 
   /** Close the help modal */
   closeHelpModal: () => void;
+}
+
+export interface KeyPressDialogProps {
+  /** Key to open help modal (default: "?") */
+  helpKey?: string;
+
+  /** Theme for help modal (default: "light") */
+  theme?: "light" | "dark";
+
+  /** Whether to show conflicts in console and help modal (default: true in dev) */
+  showConflicts?: boolean;
 }

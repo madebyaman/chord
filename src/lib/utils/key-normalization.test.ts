@@ -281,3 +281,179 @@ describe("integration: shortcut registration and event matching", () => {
     expect(normalizeShortcut("MOD+S", "darwin")).toBe(normalizeShortcut("cmd+s", "darwin"));
   });
 });
+
+describe("function keys", () => {
+  it.each([
+    ["f1", "f1"],
+    ["f2", "f2"],
+    ["f3", "f3"],
+    ["f4", "f4"],
+    ["f5", "f5"],
+    ["f6", "f6"],
+    ["f7", "f7"],
+    ["f8", "f8"],
+    ["f9", "f9"],
+    ["f10", "f10"],
+    ["f11", "f11"],
+    ["f12", "f12"],
+    ["F1", "f1"],
+    ["F12", "f12"],
+  ])("should normalize function key: %s -> %s", (input, expected) => {
+    expect(normalizeShortcut(input, "darwin")).toBe(expected);
+  });
+
+  it.each([
+    ["shift+f1", "shift+f1"],
+    ["ctrl+f5", "ctrl+f5"],
+    ["mod+f12", "darwin", "meta+f12"],
+    ["mod+f12", "win32", "ctrl+f12"],
+  ])("should normalize function keys with modifiers: %s -> %s", (input, platform, expected) => {
+    const plat = platform || "darwin";
+    const exp = expected || input;
+    expect(normalizeShortcut(input, plat as Platform)).toBe(exp);
+  });
+});
+
+describe("symbol keys", () => {
+  it.each([
+    [",", ","],
+    [".", "."],
+    [";", ";"],
+    ["'", "'"],
+    ["[", "["],
+    ["]", "]"],
+    ["\\", "\\"],
+    ["-", "-"],
+    ["=", "="],
+    ["`", "`"],
+    ["/", "/"],
+  ])("should normalize symbol key: %s -> %s", (input, expected) => {
+    expect(normalizeShortcut(input, "darwin")).toBe(expected);
+  });
+
+  it.each([
+    ["mod+/", "darwin", "meta+/"],
+    ["ctrl+,", "darwin", "ctrl+,"],
+    ["shift+.", "darwin", "shift+."],
+  ])("should normalize symbols with modifiers: %s -> %s", (input, platform, expected) => {
+    expect(normalizeShortcut(input, platform as Platform)).toBe(expected);
+  });
+});
+
+describe("number keys", () => {
+  it.each([
+    ["0", "0"],
+    ["1", "1"],
+    ["2", "2"],
+    ["3", "3"],
+    ["4", "4"],
+    ["5", "5"],
+    ["6", "6"],
+    ["7", "7"],
+    ["8", "8"],
+    ["9", "9"],
+  ])("should normalize number key: %s -> %s", (input, expected) => {
+    expect(normalizeShortcut(input, "darwin")).toBe(expected);
+  });
+
+  it.each([
+    ["mod+1", "darwin", "meta+1"],
+    ["ctrl+shift+5", "darwin", "ctrl+shift+5"],
+  ])("should normalize numbers with modifiers: %s -> %s", (input, platform, expected) => {
+    expect(normalizeShortcut(input, platform as Platform)).toBe(expected);
+  });
+});
+
+describe("edge cases", () => {
+  it("should handle empty string gracefully", () => {
+    expect(() => normalizeShortcut("", "darwin")).toThrow();
+  });
+
+  it("should handle only modifiers (no key)", () => {
+    expect(() => normalizeShortcut("mod+ctrl", "darwin")).toThrow(/no key specified/i);
+    expect(() => normalizeShortcut("shift+alt", "darwin")).toThrow(/no key specified/i);
+  });
+
+  it("should handle multiple non-modifier keys", () => {
+    expect(() => normalizeShortcut("k+j", "darwin")).toThrow(/multiple keys specified/i);
+    expect(() => normalizeShortcut("a+b+c", "darwin")).toThrow(/multiple keys specified/i);
+  });
+
+  it("should handle duplicate modifiers", () => {
+    // Should deduplicate or handle gracefully
+    const result = normalizeShortcut("ctrl+ctrl+k", "darwin");
+    expect(result).toBe("ctrl+k");
+  });
+
+  it("should normalize long whitespace", () => {
+    expect(normalizeShortcut("   mod   +   s   ", "darwin")).toBe("meta+s");
+  });
+
+  it("should handle mixed case in complex shortcuts", () => {
+    expect(normalizeShortcut("CTRL+SHIFT+ALT+K", "darwin")).toBe("ctrl+alt+shift+k");
+  });
+
+  it("should handle command alias consistently", () => {
+    expect(normalizeShortcut("command+k", "darwin")).toBe("meta+k");
+    expect(normalizeShortcut("cmd+k", "darwin")).toBe("meta+k");
+    expect(normalizeShortcut("command+k", "win32")).toBe("ctrl+k");
+  });
+
+  it("should handle option alias consistently", () => {
+    expect(normalizeShortcut("option+k", "darwin")).toBe("alt+k");
+    expect(normalizeShortcut("opt+k", "darwin")).toBe("alt+k");
+  });
+
+  it("should handle control alias consistently", () => {
+    expect(normalizeShortcut("control+k", "darwin")).toBe("ctrl+k");
+    expect(normalizeShortcut("ctrl+k", "darwin")).toBe("ctrl+k");
+  });
+});
+
+describe("normalizeEvent - additional cases", () => {
+  it("should handle events with no modifiers", () => {
+    const event = { key: "a" } as KeyboardEvent;
+    expect(normalizeEvent(event)).toBe("a");
+  });
+
+  it("should ignore modifier keys pressed alone", () => {
+    const events = [
+      { key: "Control", ctrlKey: true },
+      { key: "Shift", shiftKey: true },
+      { key: "Alt", altKey: true },
+      { key: "Meta", metaKey: true },
+    ];
+
+    events.forEach((event) => {
+      const result = normalizeEvent(event as KeyboardEvent);
+      // Should return the key name in lowercase
+      expect(result.toLowerCase()).toContain(event.key.toLowerCase());
+    });
+  });
+
+  it("should handle all four modifiers together", () => {
+    const event = {
+      key: "k",
+      ctrlKey: true,
+      altKey: true,
+      shiftKey: true,
+      metaKey: true,
+    } as KeyboardEvent;
+
+    expect(normalizeEvent(event)).toBe("ctrl+alt+shift+meta+k");
+  });
+
+  it("should handle special characters with modifiers", () => {
+    const event1 = {
+      key: "/",
+      ctrlKey: true,
+    } as KeyboardEvent;
+    expect(normalizeEvent(event1)).toBe("ctrl+/");
+
+    const event2 = {
+      key: "[",
+      metaKey: true,
+    } as KeyboardEvent;
+    expect(normalizeEvent(event2)).toBe("meta+[");
+  });
+});
