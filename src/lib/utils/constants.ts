@@ -16,6 +16,18 @@ export const DEFAULTS = {
 
   /** Default category name */
   DEFAULT_CATEGORY: 'General',
+
+  /** Default event type for keyboard listeners */
+  EVENT_TYPE: 'keydown' as const,
+
+  /** Default capture phase setting */
+  CAPTURE: false,
+
+  /** Default passive listener setting */
+  PASSIVE: false,
+
+  /** Default once setting */
+  ONCE: false,
 } as const;
 
 /**

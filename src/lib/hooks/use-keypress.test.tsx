@@ -2,9 +2,12 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { render } from "vitest-browser-react";
+import { page } from "@vitest/browser/context";
 import { useKeyPress } from "./use-keypress";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
+import { useRef, useEffect } from "react";
 
 const createWrapper = () => {
   return ({ children }: { children: ReactNode }) => <KeyPressProvider>{children}</KeyPressProvider>;
@@ -234,46 +237,82 @@ describe("useKeyPress", () => {
   });
 
   describe("preventDefault prop", () => {
-    it("true: event.preventDefault() is called", () => {
+    it("true: prevents character from appearing in input", async () => {
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            preventDefault: true,
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      // Test component that renders input with useKeyPress
+      function TestComponent() {
+        const inputRef = useRef<HTMLInputElement>(null);
+
+        useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, []);
+
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          target: inputRef.current!,
+          preventDefault: true,
+          onPress,
+        });
+
+        return <input ref={inputRef} data-testid="test-input" />;
+      }
+
+      const screen = render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
+      const input = screen.getByTestId("test-input");
 
-      const event = new KeyboardEvent("keydown", { key: "k", cancelable: true });
-      const preventDefaultSpy = vi.spyOn(event, "preventDefault");
-      document.dispatchEvent(event);
+      await input.click();
+      await input.fill("k");
 
-      expect(preventDefaultSpy).toHaveBeenCalled();
+      // Character should NOT appear because preventDefault was called
+      await expect.element(input).toHaveValue("");
+      expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("false: allows default browser behavior", () => {
+    it("false: allows character to appear in input", async () => {
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            preventDefault: false,
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      // Test component that renders input with useKeyPress
+      function TestComponent() {
+        const inputRef = useRef<HTMLInputElement>(null);
+
+        useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, []);
+
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          target: inputRef.current!,
+          preventDefault: false,
+          onPress,
+        });
+
+        return <input ref={inputRef} data-testid="test-input" />;
+      }
+
+      const screen = render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
+      const input = screen.getByTestId("test-input");
 
-      const event = new KeyboardEvent("keydown", { key: "k", cancelable: true });
-      const preventDefaultSpy = vi.spyOn(event, "preventDefault");
-      document.dispatchEvent(event);
+      await input.click();
+      await input.fill("k");
 
-      expect(preventDefaultSpy).not.toHaveBeenCalled();
+      // Character SHOULD appear because preventDefault was not called
+      await expect.element(input).toHaveValue("k");
+      expect(onPress).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -651,10 +690,7 @@ describe("useKeyPress", () => {
         onPress: onPress1,
       };
 
-      const { rerender } = renderHook(
-        () => useKeyPress(config),
-        { wrapper: createWrapper() },
-      );
+      const { rerender } = renderHook(() => useKeyPress(config), { wrapper: createWrapper() });
 
       // Change multiple options
       config = {
@@ -694,6 +730,135 @@ describe("useKeyPress", () => {
           }),
         );
       }).toThrow();
+    });
+  });
+
+  describe("Advanced event handling", () => {
+    it("handles multiple event types on same target independently", () => {
+      const onKeyDown = vi.fn();
+      const onKeyUp = vi.fn();
+      const customTarget = document.createElement("div");
+
+      renderHook(
+        () => {
+          useKeyPress({
+            key: "k",
+            description: "KeyDown Handler",
+            target: customTarget,
+            eventType: "keydown",
+            onPress: onKeyDown,
+          });
+
+          useKeyPress({
+            key: "k",
+            description: "KeyUp Handler",
+            target: customTarget,
+            eventType: "keyup",
+            onPress: onKeyUp,
+          });
+        },
+        { wrapper: createWrapper() },
+      );
+
+      // KeyDown should only trigger keydown handler
+      const keydownEvent = new KeyboardEvent("keydown", { key: "k" });
+      customTarget.dispatchEvent(keydownEvent);
+      expect(onKeyDown).toHaveBeenCalledTimes(1);
+      expect(onKeyUp).not.toHaveBeenCalled();
+
+      // KeyUp should only trigger keyup handler
+      const keyupEvent = new KeyboardEvent("keyup", { key: "k" });
+      customTarget.dispatchEvent(keyupEvent);
+      expect(onKeyDown).toHaveBeenCalledTimes(1);
+      expect(onKeyUp).toHaveBeenCalledTimes(1);
+    });
+
+    it("signal already aborted at registration prevents handler from executing", () => {
+      const onPress = vi.fn();
+      const controller = new AbortController();
+
+      // Abort before registration
+      controller.abort();
+
+      renderHook(
+        () =>
+          useKeyPress({
+            key: "k",
+            description: "Test",
+            eventOptions: { signal: controller.signal },
+            onPress,
+          }),
+        { wrapper: createWrapper() },
+      );
+
+      // Handler should not execute
+      const event = new KeyboardEvent("keydown", { key: "k" });
+      document.dispatchEvent(event);
+      expect(onPress).not.toHaveBeenCalled();
+    });
+
+    it("listener is removed when last handler with same config unregisters", () => {
+      const onPress1 = vi.fn();
+      const onPress2 = vi.fn();
+      const customTarget = document.createElement("div");
+
+      const { unmount: unmount1 } = renderHook(
+        () =>
+          useKeyPress({
+            key: "k",
+            description: "Handler 1",
+            target: customTarget,
+            eventType: "keydown",
+            eventOptions: { capture: false },
+            onPress: onPress1,
+          }),
+        { wrapper: createWrapper() },
+      );
+
+      const { unmount: unmount2 } = renderHook(
+        () =>
+          useKeyPress({
+            key: "j",
+            description: "Handler 2",
+            target: customTarget,
+            eventType: "keydown",
+            eventOptions: { capture: false },
+            onPress: onPress2,
+          }),
+        { wrapper: createWrapper() },
+      );
+
+      // Both should work
+      const event1 = new KeyboardEvent("keydown", { key: "k" });
+      customTarget.dispatchEvent(event1);
+      expect(onPress1).toHaveBeenCalledTimes(1);
+
+      const event2 = new KeyboardEvent("keydown", { key: "j" });
+      customTarget.dispatchEvent(event2);
+      expect(onPress2).toHaveBeenCalledTimes(1);
+
+      // Unmount first handler
+      unmount1();
+      onPress1.mockClear();
+      onPress2.mockClear();
+
+      // First handler should not work, second should still work
+      const event3 = new KeyboardEvent("keydown", { key: "k" });
+      customTarget.dispatchEvent(event3);
+      expect(onPress1).not.toHaveBeenCalled();
+
+      const event4 = new KeyboardEvent("keydown", { key: "j" });
+      customTarget.dispatchEvent(event4);
+      expect(onPress2).toHaveBeenCalledTimes(1);
+
+      // Unmount second handler
+      unmount2();
+      onPress2.mockClear();
+
+      // Neither should work after both unmounted
+      const event5 = new KeyboardEvent("keydown", { key: "j" });
+      customTarget.dispatchEvent(event5);
+      expect(onPress2).not.toHaveBeenCalled();
     });
   });
 });

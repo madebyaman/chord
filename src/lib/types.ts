@@ -1,4 +1,13 @@
 /**
+ * Keyboard event types
+ */
+export enum KeyEventType {
+  KeyDown = "keydown",
+  KeyUp = "keyup",
+  KeyPress = "keypress",
+}
+
+/**
  * Configuration for a keyboard shortcut handler
  */
 export interface KeyPressConfig {
@@ -22,6 +31,15 @@ export interface KeyPressConfig {
 
   /** Component that registered this handler (for debugging) */
   component?: string;
+
+  /** Event type to listen for (default: "keydown") */
+  eventType?: KeyEventType | "keydown" | "keyup" | "keypress";
+
+  /** Custom event target (default: document) */
+  target?: EventTarget;
+
+  /** Event listener options (capture, passive, once, signal) */
+  eventOptions?: AddEventListenerOptions;
 }
 
 /**
@@ -54,7 +72,7 @@ export interface KeySequenceConfig {
  * Internal representation of a registered shortcut handler
  */
 export interface ShortcutHandler
-  extends Required<Omit<KeyPressConfig, "enabled" | "preventDefault">> {
+  extends Required<Omit<KeyPressConfig, "enabled" | "preventDefault" | "eventOptions">> {
   /** Unique identifier for this handler */
   id: number;
 
@@ -66,6 +84,47 @@ export interface ShortcutHandler
 
   /** Timestamp when registered */
   registeredAt: number;
+
+  /** Event type this handler listens for */
+  eventType: string;
+
+  /** Target element this handler listens on */
+  target: EventTarget;
+
+  /** Whether this handler should only execute once */
+  once: boolean;
+
+  /** Whether this handler uses capture phase */
+  capture: boolean;
+
+  /** Whether this handler is passive */
+  passive: boolean;
+
+  /** AbortSignal for programmatic unregistration */
+  signal?: AbortSignal;
+
+  /** Listener key for quick group lookup (e.g., "doc:keydown:false:false") */
+  listenerKey: string;
+}
+
+/**
+ * Listener group manages a single event listener shared by multiple handlers
+ */
+export interface ListenerGroup {
+  /** Set of handler IDs using this listener */
+  handlerIds: Set<number>;
+
+  /** The bound handler function attached to the target */
+  boundHandler: (e: Event) => void;
+
+  /** Event type (keydown, keyup, keypress) */
+  eventType: string;
+
+  /** Whether this listener uses capture phase */
+  capture: boolean;
+
+  /** Whether this listener is passive */
+  passive: boolean;
 }
 
 /**
