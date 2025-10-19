@@ -11,6 +11,9 @@ export enum KeyEventType {
  * Configuration for a keyboard shortcut handler
  */
 export interface KeyPressConfig {
+  /** Type identifier for the Core router */
+  type: "keypress";
+
   /** Key combination (e.g., "cmd+k", "ctrl+shift+s") */
   key: string;
 
@@ -46,6 +49,9 @@ export interface KeyPressConfig {
  * Configuration for a key sequence handler
  */
 export interface KeySequenceConfig {
+  /** Type identifier for the Core router */
+  type: "sequence";
+
   /** Array of keys in sequence (e.g., ["g", "h"] or ["mod+k", "mod+b"]) */
   sequence: string[];
 
@@ -135,7 +141,7 @@ export interface ShortcutConflict {
   key: string;
 
   /** All handlers registered for this key */
-  handlers: ShortcutHandler[];
+  handlers: HandlerInfo[];
 }
 
 /**
@@ -210,4 +216,33 @@ export interface KeyPressDialogProps {
 
   /** Whether to show conflicts in console and help modal (default: true in dev) */
   showConflicts?: boolean;
+}
+
+/**
+ * Simplified handler info returned by getAll()
+ * Used for displaying shortcuts and detecting conflicts
+ */
+export interface HandlerInfo {
+  /** The key combination or sequence */
+  key?: string;
+  keySequence?: string[];
+  /** Human-readable description */
+  description: string;
+  /** Category for grouping */
+  category: string;
+}
+
+/**
+ * Generic interface for keyboard shortcut managers
+ * Implemented by KeyPress and KeySequence classes
+ */
+export interface KeyManager<TConfig, THandler> {
+  /** Register a handler with a pre-generated ID from Core */
+  register(config: TConfig, id: number): THandler;
+
+  /** Unregister a handler by ID */
+  unregister(id: number): void;
+
+  /** Get all registered handlers as simplified info objects */
+  getAll(): HandlerInfo[];
 }

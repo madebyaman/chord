@@ -3,7 +3,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { render } from "vitest-browser-react";
-import { page } from "@vitest/browser/context";
 import { useKeyPress } from "./use-keypress";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
@@ -84,21 +83,20 @@ describe("useKeyPress", () => {
 
   describe("description prop", () => {
     it("is included in getHandlers()", () => {
-      const { result: providerResult } = renderHook(() => useKeyPressContext(), {
-        wrapper: createWrapper(),
-      });
-
-      renderHook(
-        () =>
+      const { result } = renderHook(
+        () => {
+          const context = useKeyPressContext();
           useKeyPress({
             key: "k",
             description: "My custom description",
             onPress: vi.fn(),
-          }),
+          });
+          return context;
+        },
         { wrapper: createWrapper() },
       );
 
-      const handlers = providerResult.current.getHandlers();
+      const handlers = result.current.getHandlers();
       const handler = handlers.find((h) => h.description === "My custom description");
       expect(handler).toBeDefined();
     });
@@ -130,47 +128,39 @@ describe("useKeyPress", () => {
 
   describe("category prop", () => {
     it('defaults to "General"', () => {
-      const { result: providerResult } = renderHook(
+      const { result } = renderHook(
         () => {
-          return useKeyPressContext();
-        },
-        { wrapper: createWrapper() },
-      );
-
-      renderHook(
-        () =>
+          const context = useKeyPressContext();
           useKeyPress({
             key: "k",
             description: "Test",
             onPress: vi.fn(),
-          }),
-        { wrapper: createWrapper() },
-      );
-
-      const handlers = providerResult.current.getHandlers();
-      expect(handlers[0].category).toBe("General");
-    });
-
-    it("custom category is stored", () => {
-      const { result: providerResult } = renderHook(
-        () => {
-          return useKeyPressContext();
+          });
+          return context;
         },
         { wrapper: createWrapper() },
       );
 
-      renderHook(
-        () =>
+      const handlers = result.current.getHandlers();
+      expect(handlers[0].category).toBe("General");
+    });
+
+    it("custom category is stored", () => {
+      const { result } = renderHook(
+        () => {
+          const context = useKeyPressContext();
           useKeyPress({
             key: "k",
             description: "Test",
             category: "File",
             onPress: vi.fn(),
-          }),
+          });
+          return context;
+        },
         { wrapper: createWrapper() },
       );
 
-      const handlers = providerResult.current.getHandlers();
+      const handlers = result.current.getHandlers();
       expect(handlers[0].category).toBe("File");
     });
   });
@@ -345,6 +335,7 @@ describe("useKeyPress", () => {
       expect(warningMessage).toMatch(/OtherComponent/);
 
       consoleWarnSpy.mockRestore();
+      vi.unstubAllGlobals();
     });
   });
 
