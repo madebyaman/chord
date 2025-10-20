@@ -27,11 +27,11 @@ import { useKeyPressContext } from "../context/provider";
 // }
 //
 
-export function useKeyPress(config: Omit<KeyPressConfig, 'type'>) {
+export function useKeyPress(config: KeyPressConfig) {
   const context = useKeyPressContext();
 
   useEffect(() => {
-    const id = context.registerHandler({ ...config, type: 'keypress' });
+    const id = context.registerHandler('keypress', config);
     return () => context.unregisterHandler(id);
   }, [context, config]);
 }

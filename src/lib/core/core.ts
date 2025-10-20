@@ -1,5 +1,11 @@
-import type { KeyPressConfig, HandlerInfo, ShortcutConflict } from "../types";
+import type {
+  KeyPressConfig,
+  KeySequenceConfig,
+  HandlerInfo,
+  ShortcutConflict,
+} from "../types";
 import { KeyPress } from "./key-press";
+import { KeySequence } from "./key-sequence";
 
 /**
  * ChordCore - Central orchestrator for keyboard shortcut management
@@ -12,6 +18,12 @@ export class ChordCore {
   /** KeyPress manager instance */
   private keyPressManager = new KeyPress();
 
+  /** KeySequence manager instance */
+  private keySequenceManager = new KeySequence();
+
+  /** Track which manager owns which ID */
+  private handlerTypes = new Map<number, "keypress" | "sequence">();
+
   /** Generate unique ID for handlers */
   private generateId(): number {
     return ++this.idCounter;
@@ -23,24 +35,49 @@ export class ChordCore {
     return allHandlers.filter((handler) => handler.key === normalizedKey);
   }
 
+  /** Get handlers for a given sequence (for conflict detection) */
+  private getHandlersBySequence(sequence: string[]): HandlerInfo[] {
+    const allHandlers = this.keySequenceManager.getAll();
+    const sequenceKey = sequence.join(",");
+    return allHandlers.filter(
+      (handler) =>
+        handler.keySequence && handler.keySequence.join(",") === sequenceKey,
+    );
+  }
+
   /**
    * Register a keyboard shortcut handler
-   * Routes to appropriate manager based on config.type
+   * Routes to appropriate manager based on type parameter
    */
-  registerHandler(config: KeyPressConfig) {
+  registerHandler(type: "keypress", config: KeyPressConfig): number | undefined;
+  registerHandler(
+    type: "sequence",
+    config: KeySequenceConfig,
+  ): number | undefined;
+  registerHandler(
+    type: "keypress" | "sequence",
+    config: KeyPressConfig | KeySequenceConfig,
+  ): number | undefined {
     if (config.enabled === false) return;
 
     // Check type and route to appropriate manager
-    if (config.type === "keypress") {
+    if (type === "keypress") {
       const id = this.generateId();
-      const handler = this.keyPressManager.register(config, id);
+      const handler = this.keyPressManager.register(
+        config as KeyPressConfig,
+        id,
+      );
+
+      // Track handler type
+      this.handlerTypes.set(id, "keypress");
 
       // Check for conflicts and warn in development
       const existingHandlers = this.getHandlersByKey(handler.key);
       console.log("NODE_ENV", process.env.NODE_ENV);
       console.log("existing handlers", existingHandlers.length);
       if (
-        (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") &&
+        (process.env.NODE_ENV === "development" ||
+          process.env.NODE_ENV === "test") &&
         existingHandlers.length > 1
       ) {
         console.log("warning");
@@ -48,10 +85,30 @@ export class ChordCore {
       }
 
       return id;
-    } else if (config.type === "sequence") {
-      throw new Error("[Chord] KeySequence not yet implemented");
+    } else if (type === "sequence") {
+      const id = this.generateId();
+      const handler = this.keySequenceManager.register(
+        config as KeySequenceConfig,
+        id,
+      );
+
+      // Track handler type
+      this.handlerTypes.set(id, "sequence");
+
+      // Check for conflicts and warn in development
+      const sequenceKey = handler.sequence.join(",");
+      const existingHandlers = this.getHandlersBySequence(handler.sequence);
+      if (
+        (process.env.NODE_ENV === "development" ||
+          process.env.NODE_ENV === "test") &&
+        existingHandlers.length > 1
+      ) {
+        this.warnConflict(sequenceKey, existingHandlers);
+      }
+
+      return id;
     } else {
-      throw new Error(`[Chord] Unknown handler type: ${(config as any).type}`);
+      throw new Error(`[Chord] Unknown handler type: ${type}`);
     }
   }
 
@@ -61,9 +118,18 @@ export class ChordCore {
   unregisterHandler(id: number | undefined) {
     if (!id) return;
 
-    // For now, only KeyPress exists, so delegate to it
-    // In the future, we'll need to track which manager owns which ID
-    this.keyPressManager.unregister(id);
+    // Route to the correct manager based on handler type
+    const handlerType = this.handlerTypes.get(id);
+    if (!handlerType) return;
+
+    if (handlerType === "keypress") {
+      this.keyPressManager.unregister(id);
+    } else if (handlerType === "sequence") {
+      this.keySequenceManager.unregister(id);
+    }
+
+    // Clean up tracking
+    this.handlerTypes.delete(id);
   }
 
   /**
@@ -71,8 +137,10 @@ export class ChordCore {
    */
   getHandlers(): HandlerInfo[] {
     // Return handlers from all managers
-    // For now, only KeyPress exists
-    return this.keyPressManager.getAll();
+    return [
+      ...this.keyPressManager.getAll(),
+      ...this.keySequenceManager.getAll(),
+    ];
   }
 
   /**
@@ -86,7 +154,9 @@ export class ChordCore {
 
     for (const handler of allHandlers) {
       // Handle both key and keySequence fields
-      const handlerKey = handler.key || (handler.keySequence ? handler.keySequence.join(",") : "");
+      const handlerKey =
+        handler.key ||
+        (handler.keySequence ? handler.keySequence.join(",") : "");
       if (!handlerKey) continue;
 
       const existing = keyMap.get(handlerKey) || [];
@@ -111,7 +181,9 @@ export class ChordCore {
     console.warn(
       `[Chord] Shortcut conflict detected for "${keyString}":\n` +
         `  ${handlers.length} handlers registered:\n` +
-        handlers.map((h) => `    - ${h.description} (${h.category})`).join("\n") +
+        handlers
+          .map((h) => `    - ${h.description} (${h.category})`)
+          .join("\n") +
         `\n  Only the first registered handler will be executed.`,
     );
   }

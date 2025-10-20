@@ -19,7 +19,8 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
   private persistentListeners: Map<string, ListenerGroup> = new Map();
 
   /** WeakMap for element listeners (auto cleanup) */
-  private elementListeners: WeakMap<EventTarget, Map<string, ListenerGroup>> = new WeakMap();
+  private elementListeners: WeakMap<EventTarget, Map<string, ListenerGroup>> =
+    new WeakMap();
 
   /** AbortSignal cleanup handlers */
   private abortHandlers: Map<number, () => void> = new Map();
@@ -31,12 +32,15 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
     capture: boolean,
     passive: boolean,
   ): string {
-    const targetType = target === document ? "doc" : target === window ? "win" : "el";
+    const targetType =
+      target === document ? "doc" : target === window ? "win" : "el";
     return `${targetType}:${eventType}:${capture}:${passive}`;
   }
 
   /** Get listener map for target (persistent for document/window, WeakMap for elements) */
-  private getTargetListenerMap(target: EventTarget): Map<string, ListenerGroup> {
+  private getTargetListenerMap(
+    target: EventTarget,
+  ): Map<string, ListenerGroup> | undefined {
     if (target === document || target === window) {
       return this.persistentListeners;
     }
@@ -56,12 +60,22 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
     passive: boolean,
   ): ListenerGroup {
     const targetMap = this.getTargetListenerMap(target);
-    const listenerKey = this.getListenerKey(target, eventType, capture, passive);
+    const listenerKey = this.getListenerKey(
+      target,
+      eventType,
+      capture,
+      passive,
+    );
 
     let group = targetMap.get(listenerKey);
 
     if (!group) {
-      const boundHandler = this.createListenerHandler(target, eventType, capture, passive);
+      const boundHandler = this.createListenerHandler(
+        target,
+        eventType,
+        capture,
+        passive,
+      );
 
       target.addEventListener(eventType, boundHandler, {
         capture,
@@ -95,7 +109,12 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
       const normalizedKey = normalizeEvent(event);
 
       const targetMap = this.getTargetListenerMap(target);
-      const listenerKey = this.getListenerKey(target, eventType, capture, passive);
+      const listenerKey = this.getListenerKey(
+        target,
+        eventType,
+        capture,
+        passive,
+      );
       const group = targetMap.get(listenerKey);
 
       if (!group) return;
@@ -138,7 +157,12 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
     const signal = config.eventOptions?.signal;
 
     const normalizedKey = normalizeShortcut(config.key);
-    const listenerKey = this.getListenerKey(eventTarget, eventType, capture, passive);
+    const listenerKey = this.getListenerKey(
+      eventTarget,
+      eventType,
+      capture,
+      passive,
+    );
 
     console.log("[REGISTER]: registering", config.key, "�", normalizedKey);
 
@@ -177,7 +201,12 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
     }
 
     // Add to listener group
-    const group = this.getOrCreateListenerGroup(eventTarget, eventType, capture, passive);
+    const group = this.getOrCreateListenerGroup(
+      eventTarget,
+      eventType,
+      capture,
+      passive,
+    );
     group.handlerIds.add(id);
 
     return handler;
@@ -209,9 +238,13 @@ export class KeyPress implements KeyManager<KeyPressConfig, ShortcutHandler> {
 
       // If no more handlers for this group, remove the event listener
       if (group.handlerIds.size === 0) {
-        handler.target.removeEventListener(handler.eventType, group.boundHandler, {
-          capture: group.capture,
-        });
+        handler.target.removeEventListener(
+          handler.eventType,
+          group.boundHandler,
+          {
+            capture: group.capture,
+          },
+        );
         targetMap.delete(handler.listenerKey);
 
         // Clean up element listener map if empty
