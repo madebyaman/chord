@@ -1,84 +1,55 @@
 /**
- * Keyboard event types
+ * Base keyboard handler configuration
  */
-export enum KeyEventType {
-  KeyDown = "keydown",
-  KeyUp = "keyup",
-  KeyPress = "keypress",
-}
-
-/**
- * Configuration for a keyboard shortcut handler
- */
-export interface KeyPressConfig {
-  /** Type identifier for the Core router */
-  type: "keypress";
-
-  /** Key combination (e.g., "cmd+k", "ctrl+shift+s") */
-  key: string;
-
-  /** Human-readable description shown in help modal */
+interface BaseKeyConfig {
+  /** Human-readable description (for help UI or docs) */
   description: string;
-
-  /** Handler function to execute when key is pressed */
-  onPress: () => void;
 
   /** Optional category for grouping in help modal */
   category?: string;
 
-  /** Whether the shortcut is currently enabled */
+  /** Whether this handler is currently active */
   enabled?: boolean;
-
-  /** Whether to prevent default browser behavior */
-  preventDefault?: boolean;
 
   /** Component that registered this handler (for debugging) */
   component?: string;
-
-  /** Event type to listen for (default: "keydown") */
-  eventType?: KeyEventType | "keydown" | "keyup" | "keypress";
-
-  /** Custom event target (default: document) */
-  target?: EventTarget;
-
-  /** Event listener options (capture, passive, once, signal) */
-  eventOptions?: AddEventListenerOptions;
 }
 
 /**
- * Configuration for a key sequence handler
+ * Configuration for a single key or combination
  */
-export interface KeySequenceConfig {
-  /** Type identifier for the Core router */
-  type: "sequence";
+export interface KeyPressConfig extends BaseKeyConfig {
+  /** Key combination (e.g. "ctrl+k", "cmd+shift+s") */
+  key: string;
 
-  /** Array of keys in sequence (e.g., ["g", "h"] or ["mod+k", "mod+b"]) */
+  /** Handler when key is pressed */
+  onPress: () => void;
+
+  /** Event type (default: keydown) */
+  eventType?: "keydown" | "keyup" | "keypress";
+}
+
+/**
+ * Configuration for a key sequence (e.g. g,h or g,h,e)
+ */
+export interface KeySequenceConfig extends BaseKeyConfig {
+  /** Sequence of keys (e.g. ["g", "h"]) */
   sequence: string[];
 
-  /** Human-readable description shown in help modal */
-  description: string;
-
-  /** Handler function to execute when sequence completes */
+  /** Handler when full sequence completes */
   onComplete: () => void;
 
-  /** Optional category for grouping in help modal */
-  category?: string;
-
-  /** Whether the sequence is currently enabled */
-  enabled?: boolean;
-
-  /** Timeout in milliseconds before sequence resets (default: 1000) */
+  /** Timeout between keys before reset (default: 1000ms) */
   timeout?: number;
-
-  /** Component that registered this sequence (for debugging) */
-  component?: string;
 }
 
 /**
  * Internal representation of a registered shortcut handler
  */
 export interface ShortcutHandler
-  extends Required<Omit<KeyPressConfig, "enabled" | "preventDefault" | "eventOptions">> {
+  extends Required<
+    Omit<KeyPressConfig, "enabled" | "preventDefault" | "eventOptions">
+  > {
   /** Unique identifier for this handler */
   id: number;
 
@@ -92,7 +63,7 @@ export interface ShortcutHandler
   registeredAt: number;
 
   /** Event type this handler listens for */
-  eventType: string;
+  eventType: "keydown" | "keyup" | "keypress";
 
   /** Target element this handler listens on */
   target: EventTarget;
@@ -124,13 +95,7 @@ export interface ListenerGroup {
   boundHandler: (e: Event) => void;
 
   /** Event type (keydown, keyup, keypress) */
-  eventType: string;
-
-  /** Whether this listener uses capture phase */
-  capture: boolean;
-
-  /** Whether this listener is passive */
-  passive: boolean;
+  eventType: "keydown" | "keyup" | "keypress";
 }
 
 /**
@@ -178,7 +143,12 @@ export interface KeyPressProviderProps {
   children: React.ReactNode;
 
   /** Conflict resolution strategy (default: "warn") */
-  conflictResolution?: "warn" | "firstWins" | "lastWins" | "scopePriority" | "error";
+  conflictResolution?:
+    | "warn"
+    | "firstWins"
+    | "lastWins"
+    | "scopePriority"
+    | "error";
 }
 
 /**
