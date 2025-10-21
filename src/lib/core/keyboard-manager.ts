@@ -1,5 +1,6 @@
 import { DEFAULT_TIMEOUT, DEFAULTS } from "../utils/constants";
 import type {
+  KeyPressConfig,
   KeySequenceConfig,
   ListenerGroup,
   KeyManager,
@@ -8,13 +9,14 @@ import type {
 import { normalizeShortcut, normalizeEvent } from "../utils/key-normalization";
 
 /**
- * Internal representation of a registered sequence handler
+ * Internal representation of a registered keyboard handler
+ * Handles both single keys and sequences uniformly
  */
-interface SequenceHandler {
+interface KeyboardHandler {
   /** Unique identifier for this handler */
   id: number;
 
-  /** Normalized sequence of keys */
+  /** Normalized sequence of keys (array of 1+ keys) */
   sequence: string[];
 
   /** Human-readable description */
@@ -24,15 +26,15 @@ interface SequenceHandler {
   category: string;
 
   /** Handler function to execute when sequence completes */
-  onComplete: () => void;
+  callback: () => void;
 
-  /** Whether the sequence is currently enabled */
+  /** Whether the handler is currently enabled */
   enabled: boolean;
 
   /** Timeout in milliseconds before sequence resets */
   timeout: number;
 
-  /** Component that registered this sequence */
+  /** Component that registered this handler */
   component: string;
 
   /** Timestamp when registered */
@@ -43,16 +45,20 @@ interface SequenceHandler {
 
   /** Listener key for quick group lookup */
   listenerKey: string;
+
+  /** Whether to prevent default browser behavior (only for single-key, unambiguous cases) */
+  preventDefault: boolean;
 }
 
 /**
- * KeySequence manager - handles multi-key sequence shortcuts (e.g., "g h", "g t")
+ * KeyboardManager - unified manager for all keyboard shortcuts
+ * Handles both single key presses and multi-key sequences
  * Implements the KeyManager interface for registration and cleanup
  */
-export class KeySequence
-  implements KeyManager<KeySequenceConfig, SequenceHandler>
+export class KeyboardManager
+  implements KeyManager<KeyPressConfig | KeySequenceConfig, KeyboardHandler>
 {
-  private handlers: Map<number, SequenceHandler> = new Map();
+  private handlers: Map<number, KeyboardHandler> = new Map();
 
   /** Persistent listeners for window only. Key is eventType like keydown. It  is used so we can have one listener per eventType. */
   private listeners: Map<string, ListenerGroup> = new Map();
@@ -97,11 +103,11 @@ export class KeySequence
   }
 
   /** Get enabled handlers for a specific listener group */
-  private getEnabledHandlers(listenerKey: string): SequenceHandler[] {
+  private getEnabledHandlers(listenerKey: string): KeyboardHandler[] {
     const group = this.listeners.get(listenerKey);
     if (!group) return [];
 
-    const handlers: SequenceHandler[] = [];
+    const handlers: KeyboardHandler[] = [];
     for (const id of group.handlerIds) {
       const handler = this.handlers.get(id);
       if (handler && handler.enabled) {
@@ -114,7 +120,7 @@ export class KeySequence
   /** Check if buffer matches a sequence */
   private matchesSequence(
     buffer: typeof this.buffer,
-    handler: SequenceHandler,
+    handler: KeyboardHandler,
   ): "full" | "partial" | "none" {
     const sequence = handler.sequence;
     if (buffer.length > sequence.length) return "none";
@@ -127,8 +133,8 @@ export class KeySequence
     const timeout = handler.timeout;
     const timePairs: number[] = buffer.map((b) => b.time);
     const timeoutPairs = timePairs.map((t) => t - buffer[0].time);
-    console.log("[SEQUENCE] time pairs", timePairs);
-    console.log("[SEQUENCE] timeout pairs", timeoutPairs);
+    console.log("[KEYBOARD] time pairs", timePairs);
+    console.log("[KEYBOARD] timeout pairs", timeoutPairs);
     const maxTimeout = Math.max(...timeoutPairs);
     if (maxTimeout > timeout) return "none";
 
@@ -156,8 +162,8 @@ export class KeySequence
       }
 
       // Check for matches
-      const fullMatches: SequenceHandler[] = [];
-      const partialMatches: SequenceHandler[] = [];
+      const fullMatches: KeyboardHandler[] = [];
+      const partialMatches: KeyboardHandler[] = [];
 
       for (const handler of enabledHandlers) {
         const match = this.matchesSequence(this.buffer, handler);
@@ -170,10 +176,12 @@ export class KeySequence
 
       // Execute full matches
       if (fullMatches.length > 0) {
-        console.log("[SEQUENCE]: full match");
+        console.log("[KEYBOARD]: full match");
         if (partialMatches.length > 0) {
-          console.log("[SEQUENCE]: full and partial match");
-          // we should wait for the partial match to complete
+          console.log("[KEYBOARD]: full and partial match - waiting for timeout");
+          // Ambiguous case: "g" matches but "g h" might also match
+          // We need to wait before executing to see if the sequence continues
+          // Note: preventDefault cannot be applied here since we need to wait
           const maxTimeout = Math.max(...partialMatches.map((h) => h.timeout));
           if (this.timer) {
             clearTimeout(this.timer);
@@ -183,26 +191,33 @@ export class KeySequence
           // Set new timer (keep buffer for continuation)
           this.timer = setTimeout(() => {
             console.log(
-              "[SEQUENCE]: timeout, clearing buffer and executing complete matches",
+              "[KEYBOARD]: timeout, clearing buffer and executing complete matches",
             );
             this.clearBuffer();
             console.log(
-              "[SEQUENCE]: executing",
+              "[KEYBOARD]: executing",
               fullMatches.map((h) => h.sequence.join(" ")),
             );
             for (const handler of fullMatches) {
-              handler.onComplete();
+              handler.callback();
             }
           }, maxTimeout);
-          console.log("[SEQUENCE]: setting timeout of ", maxTimeout);
+          console.log("[KEYBOARD]: setting timeout of ", maxTimeout);
           return;
         }
+
+        // Unambiguous case: can preventDefault if requested
+        const shouldPreventDefault = fullMatches.some((h) => h.preventDefault);
+        if (shouldPreventDefault) {
+          event.preventDefault();
+        }
+
         console.log(
-          "[SEQUENCE]: executing",
+          "[KEYBOARD]: executing",
           fullMatches.map((h) => h.sequence.join(" ")),
         );
         for (const handler of fullMatches) {
-          handler.onComplete();
+          handler.callback();
         }
         this.clearBuffer();
         return;
@@ -213,7 +228,7 @@ export class KeySequence
         // Use maximum timeout among all partial matches
         const maxTimeout = Math.max(...partialMatches.map((h) => h.timeout));
 
-        console.log("[SEQUENCE]: partial match, waiting", maxTimeout, "ms");
+        console.log("[KEYBOARD]: partial match, waiting", maxTimeout, "ms");
 
         // Clear existing timer and start new one
         if (this.timer) {
@@ -223,7 +238,7 @@ export class KeySequence
 
         // Set new timer (keep buffer for continuation)
         this.timer = setTimeout(() => {
-          console.log("[SEQUENCE]: timeout, clearing buffer");
+          console.log("[KEYBOARD]: timeout, clearing buffer");
           this.clearBuffer();
         }, maxTimeout);
 
@@ -231,43 +246,61 @@ export class KeySequence
       }
 
       // No matches - reset buffer
-      console.log("[SEQUENCE]: no match, clearing buffer");
+      console.log("[KEYBOARD]: no match, clearing buffer");
       this.clearBuffer();
     };
   }
 
   /**
-   * Register a new key sequence handler
-   * @param config Configuration for the key sequence
+   * Register a new keyboard handler (single key or sequence)
+   * @param config Configuration for the key press or sequence
    * @param id Pre-generated ID from Core
    * @returns The registered handler
    */
-  register(config: KeySequenceConfig, id: number): SequenceHandler {
-    const eventType = DEFAULTS.EVENT_TYPE;
-    const timeout = config.timeout ?? DEFAULT_TIMEOUT;
+  register(
+    config: KeyPressConfig | KeySequenceConfig,
+    id: number,
+  ): KeyboardHandler {
+    // Determine if this is a keypress or sequence config
+    const isKeyPress = "key" in config;
 
-    // Normalize all keys in the sequence
-    const normalizedSequence = config.sequence.map((key) =>
-      normalizeShortcut(key),
-    );
+    // Convert to unified format
+    const sequence = isKeyPress
+      ? [normalizeShortcut(config.key)]
+      : config.sequence.map((key) => normalizeShortcut(key));
+
+    const callback = isKeyPress ? config.onPress : config.onComplete;
+    const eventType = config.eventType ?? DEFAULTS.EVENT_TYPE;
+
+    // For single keys, timeout is only used when waiting for longer sequences
+    // For sequences, use the specified timeout or default
+    const timeout = isKeyPress
+      ? DEFAULT_TIMEOUT
+      : (config.timeout ?? DEFAULT_TIMEOUT);
+
+    const preventDefault = isKeyPress
+      ? (config.preventDefault ?? false)
+      : false;
 
     const listenerKey = eventType;
 
     console.log(
-      "[REGISTER]: registering sequence",
-      config.sequence,
-      "�",
-      normalizedSequence,
+      "[REGISTER]: registering",
+      isKeyPress ? "keypress" : "sequence",
+      isKeyPress ? config.key : config.sequence.join(" "),
+      "→",
+      sequence.join(" "),
     );
 
-    const handler: SequenceHandler = {
+    const handler: KeyboardHandler = {
       id,
-      sequence: normalizedSequence,
+      sequence,
       description: config.description,
       category: config.category || DEFAULTS.DEFAULT_CATEGORY,
-      onComplete: config.onComplete,
+      callback,
       enabled: config.enabled ?? DEFAULTS.ENABLED,
       timeout,
+      preventDefault,
       component: config.component ?? "Undefined",
       registeredAt: Date.now(),
       eventType,
@@ -284,14 +317,14 @@ export class KeySequence
   }
 
   /**
-   * Unregister a key sequence handler by ID
+   * Unregister a keyboard handler by ID
    * @param id Handler ID to remove
    */
   unregister(id: number): void {
     const handler = this.handlers.get(id);
     if (!handler) return;
 
-    console.log("[UNREGISTER]: unregistering sequence", handler.sequence);
+    console.log("[UNREGISTER]: unregistering", handler.sequence.join(" "));
 
     // Remove from listener group
     const group = this.listeners.get(handler.listenerKey);
@@ -316,13 +349,14 @@ export class KeySequence
 
   /**
    * Get all registered handlers as simplified info objects
-   * @returns Array of handler info (keySequence, description, category)
+   * @returns Array of handler info (keySequence, description, category, component)
    */
   getAll(): HandlerInfo[] {
     return Array.from(this.handlers.values()).map((handler) => ({
       keySequence: handler.sequence,
       description: handler.description,
       category: handler.category,
+      component: handler.component,
     }));
   }
 }
