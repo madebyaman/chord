@@ -1,13 +1,12 @@
 /// <reference types="@vitest/browser/matchers" />
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { render } from "vitest-browser-react";
 import { useKeySequence } from "./use-keysequence";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
 import * as React from "react";
-import { userEvent } from "@vitest/browser/context";
 
 const createWrapper = () => {
   return ({ children }: { children: ReactNode }) => (

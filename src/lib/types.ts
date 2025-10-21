@@ -17,6 +17,11 @@ interface BaseKeyConfig {
 
 /**
  * Configuration for a single key or combination
+ *
+ * @property preventDefault - Prevents default browser behavior.
+ *   NOTE: Only works when there are no longer sequences starting with this key.
+ *   Example: preventDefault on "g" won't work if ["g", "h"] is also registered,
+ *   because the system must wait to see if "h" follows.
  */
 export interface KeyPressConfig extends BaseKeyConfig {
   /** Key combination (e.g. "ctrl+k", "cmd+shift+s") */
@@ -27,6 +32,9 @@ export interface KeyPressConfig extends BaseKeyConfig {
 
   /** Event type (default: keydown) */
   eventType?: "keydown" | "keyup" | "keypress";
+
+  /** Whether to prevent default browser behavior (only works when unambiguous) */
+  preventDefault?: boolean;
 }
 
 /**
@@ -41,47 +49,9 @@ export interface KeySequenceConfig extends BaseKeyConfig {
 
   /** Timeout between keys before reset (default: 1000ms) */
   timeout?: number;
-}
 
-/**
- * Internal representation of a registered shortcut handler
- */
-export interface ShortcutHandler
-  extends Required<
-    Omit<KeyPressConfig, "enabled" | "preventDefault" | "eventOptions">
-  > {
-  /** Unique identifier for this handler */
-  id: number;
-
-  /** Whether the shortcut is currently enabled */
-  enabled: boolean;
-
-  /** Whether to prevent default browser behavior */
-  preventDefault: boolean;
-
-  /** Timestamp when registered */
-  registeredAt: number;
-
-  /** Event type this handler listens for */
-  eventType: "keydown" | "keyup" | "keypress";
-
-  /** Target element this handler listens on */
-  target: EventTarget;
-
-  /** Whether this handler should only execute once */
-  once: boolean;
-
-  /** Whether this handler uses capture phase */
-  capture: boolean;
-
-  /** Whether this handler is passive */
-  passive: boolean;
-
-  /** AbortSignal for programmatic unregistration */
-  signal?: AbortSignal;
-
-  /** Listener key for quick group lookup (e.g., "doc:keydown:false:false") */
-  listenerKey: string;
+  /** Event type (default: keydown) */
+  eventType?: "keydown" | "keyup" | "keypress";
 }
 
 /**
@@ -194,17 +164,17 @@ export interface KeyPressDialogProps {
  */
 export interface HandlerInfo {
   /** The key combination or sequence */
-  key?: string;
-  keySequence?: string[];
+  keySequence: string[];
   /** Human-readable description */
   description: string;
   /** Category for grouping */
   category: string;
+  component: string;
 }
 
 /**
  * Generic interface for keyboard shortcut managers
- * Implemented by KeyPress and KeySequence classes
+ * Implemented by KeyboardManager class
  */
 export interface KeyManager<TConfig, THandler> {
   /** Register a handler with a pre-generated ID from Core */

@@ -6,7 +6,7 @@ export function useKeySequence(config: KeySequenceConfig) {
   const context = useKeyPressContext();
 
   useEffect(() => {
-    const id = context.registerHandler('sequence', config);
+    const id = context.registerHandler(config);
     return () => context.unregisterHandler(id);
   }, [context, config]);
 }

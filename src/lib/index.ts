@@ -8,7 +8,6 @@ export { KeyPressProvider } from "./context/provider";
 export type {
   KeyPressConfig,
   KeySequenceConfig,
-  ShortcutHandler,
   ShortcutConflict,
   NormalizedKey,
   KeyPressProviderProps,
