@@ -1,8 +1,9 @@
 /// <reference types="@vitest/browser/matchers" />
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
 import { render } from "vitest-browser-react";
+import { userEvent } from "@testing-library/user-event";
 import { useKeySequence } from "./use-keysequence";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
@@ -14,97 +15,87 @@ const createWrapper = () => {
   );
 };
 
-// Helper to dispatch keyboard events
-const dispatchKey = (
-  key: string,
-  modifiers?: {
-    ctrl?: boolean;
-    shift?: boolean;
-    alt?: boolean;
-    meta?: boolean;
-  },
-) => {
-  const event = new KeyboardEvent("keydown", {
-    key,
-    ctrlKey: modifiers?.ctrl,
-    shiftKey: modifiers?.shift,
-    altKey: modifiers?.alt,
-    metaKey: modifiers?.meta,
-  });
-  window.dispatchEvent(event);
-};
-
 describe("useKeySequence", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.useRealTimers();
-  });
 
   describe("Basic sequence functionality", () => {
     it("triggers when full sequence entered", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g"
-      dispatchKey("g");
+      await user.keyboard("g");
       expect(onComplete).not.toHaveBeenCalled();
 
       // Press "h"
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("does not trigger for partial sequence", () => {
+    it("does not trigger for partial sequence", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press only "g"
-      dispatchKey("g");
+      await user.keyboard("g");
       expect(onComplete).not.toHaveBeenCalled();
 
-      // Even after advancing timers
-      vi.advanceTimersByTime(100);
+      // Wait a bit to ensure it still doesn't trigger
+      await new Promise((res) => setTimeout(res, 100));
       expect(onComplete).not.toHaveBeenCalled();
     });
 
-    it("order matters - wrong order doesn't trigger", () => {
+    it("order matters - wrong order doesn't trigger", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press in wrong order: "h", "g"
-      dispatchKey("h");
-      dispatchKey("g");
+      await user.keyboard("h");
+      await user.keyboard("g");
 
       expect(onComplete).not.toHaveBeenCalled();
     });
@@ -112,180 +103,214 @@ describe("useKeySequence", () => {
 
   describe("Timeout behavior", () => {
     it("timeout clears sequence", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            timeout: 1000,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          timeout: 1000,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g"
-      dispatchKey("g");
+      await user.keyboard("g");
       expect(onComplete).not.toHaveBeenCalled();
 
-      // Wait more than timeout
-      vi.advanceTimersByTime(1100);
+      // Wait more than timeout (real wait)
+      await new Promise((res) => setTimeout(res, 1100));
 
       // Press "h" - should not trigger because sequence timed out
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
     });
 
-    it("custom timeout works correctly", () => {
+    it("custom timeout works correctly", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            timeout: 500, // Custom timeout
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          timeout: 500, // Custom timeout
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g"
-      dispatchKey("g");
+      await user.keyboard("g");
 
-      // Wait less than custom timeout but more than default
-      vi.advanceTimersByTime(600);
+      // Wait longer than custom timeout (real wait)
+      await new Promise((res) => setTimeout(res, 600));
 
       // Press "h" - should not trigger because custom timeout expired
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
     });
 
-    it("sequence completes within timeout", () => {
+    it("sequence completes within timeout", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            timeout: 1000,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          timeout: 1000,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g"
-      dispatchKey("g");
+      await user.keyboard("g");
 
-      // Wait less than timeout
-      vi.advanceTimersByTime(500);
+      // Wait less than timeout (real wait)
+      await new Promise((res) => setTimeout(res, 500));
 
       // Press "h" - should trigger because within timeout
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("buffer and timer clear after partial match timeout", () => {
+    it("buffer and timer clear after partial match timeout", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Three key sequence",
-            timeout: 800,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Three key sequence",
+          timeout: 800,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h" (partial match)
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
 
-      // Wait for timeout to expire
-      vi.advanceTimersByTime(900);
+      // Wait for timeout to expire (real wait)
+      await new Promise((res) => setTimeout(res, 900));
 
       // Press "e" - should NOT complete the sequence because buffer was cleared
-      dispatchKey("e");
+      await user.keyboard("e");
       expect(onComplete).not.toHaveBeenCalled();
 
       // Verify sequence works after reset by pressing full sequence
-      dispatchKey("g");
-      dispatchKey("h");
-      dispatchKey("e");
+      await user.keyboard("g");
+      await user.keyboard("h");
+      await user.keyboard("e");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("Overlapping sequences", () => {
-    it("longer overlapping sequence fires when completed", () => {
+    it("longer overlapping sequence fires when completed", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Go to home extended",
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Go to home extended",
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h", "e" - only longer sequence should fire
-      dispatchKey("g");
-      dispatchKey("h");
-      dispatchKey("e");
+      await user.keyboard("g");
+      await user.keyboard("h");
+      await user.keyboard("e");
 
       expect(onShortComplete).not.toHaveBeenCalled();
       expect(onLongComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("shorter sequence fires if delay before next key", () => {
+    it("shorter sequence fires if delay before next key", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            timeout: 1000,
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          timeout: 1000,
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Go to home extended",
-            timeout: 1000,
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Go to home extended",
+          timeout: 1000,
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
       // Short sequence should fire immediately
       expect(onShortComplete).not.toHaveBeenCalled();
       expect(onLongComplete).not.toHaveBeenCalled();
 
-      // Wait and press "e" - should not trigger long sequence because buffer was cleared
-      vi.advanceTimersByTime(1100);
-      dispatchKey("e");
+      // Wait and press "e" (real wait)
+      await new Promise((res) => setTimeout(res, 1100));
+      await user.keyboard("e");
 
       expect(onLongComplete).not.toHaveBeenCalled();
       expect(onShortComplete).toHaveBeenCalledTimes(1);
@@ -293,145 +318,165 @@ describe("useKeySequence", () => {
   });
 
   describe("Timing-based overlapping sequences", () => {
-    it("shorter sequence with longer timeout fires when longer sequence times out", () => {
+    it("shorter sequence with longer timeout fires when longer sequence times out", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Short sequence",
-            timeout: 500,
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Short sequence",
+          timeout: 500,
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Long sequence",
-            timeout: 400,
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Long sequence",
+          timeout: 400,
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
-      // Wait for longer sequence to timeout (450ms > 400ms but < 500ms)
-      vi.advanceTimersByTime(450);
+      // Wait for longer sequence to timeout (real wait: 450ms > 400ms but < 500ms)
+      await new Promise((res) => setTimeout(res, 450));
 
       expect(onLongComplete).not.toHaveBeenCalled();
       expect(onShortComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("shorter sequence with shorter timeout fires after waiting for longer timeout", () => {
+    it("shorter sequence with shorter timeout fires after waiting for longer timeout", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Short sequence",
-            timeout: 300,
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Short sequence",
+          timeout: 300,
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Long sequence",
-            timeout: 1000,
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Long sequence",
+          timeout: 1000,
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
-      // Wait for shorter sequence to fire (350ms > 300ms)
-      vi.advanceTimersByTime(1050);
+      // Wait for shorter sequence to fire (real wait: 1050ms)
+      await new Promise((res) => setTimeout(res, 1050));
       expect(onShortComplete).toHaveBeenCalledTimes(1);
       expect(onLongComplete).not.toHaveBeenCalled();
 
       // Try to complete longer sequence - should fail because buffer was cleared
-      dispatchKey("e");
+      await user.keyboard("e");
       expect(onLongComplete).not.toHaveBeenCalled();
     });
 
-    it("longer sequence fires when all keys pressed within both timeouts", () => {
+    it("longer sequence fires when all keys pressed within both timeouts", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Short sequence",
-            timeout: 400,
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Short sequence",
+          timeout: 400,
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Long sequence",
-            timeout: 600,
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Long sequence",
+          timeout: 600,
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
-      // Wait 200ms (< both timeouts)
-      vi.advanceTimersByTime(200);
+      // Wait 200ms (real wait, < both timeouts)
+      await new Promise((res) => setTimeout(res, 200));
 
       // Press "e" to complete longer sequence
-      dispatchKey("e");
+      await user.keyboard("e");
 
       expect(onShortComplete).not.toHaveBeenCalled();
       expect(onLongComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("both sequences timeout when delay exceeds timeout values", () => {
+    it("both sequences timeout when delay exceeds timeout values", async () => {
+      const user = userEvent.setup();
       const onShortComplete = vi.fn();
       const onLongComplete = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Short sequence",
-            timeout: 500,
-            onComplete: onShortComplete,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Short sequence",
+          timeout: 500,
+          onComplete: onShortComplete,
+        });
 
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Long sequence",
-            timeout: 500,
-            onComplete: onLongComplete,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Long sequence",
+          timeout: 500,
+          onComplete: onLongComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "g"
-      dispatchKey("g");
+      await user.keyboard("g");
 
-      // Wait longer than timeout
-      vi.advanceTimersByTime(600);
+      // Wait longer than timeout (real wait)
+      await new Promise((res) => setTimeout(res, 600));
 
       // Press "h" - should not trigger any sequence
-      dispatchKey("h");
+      await user.keyboard("h");
 
       expect(onShortComplete).not.toHaveBeenCalled();
       expect(onLongComplete).not.toHaveBeenCalled();
@@ -439,180 +484,228 @@ describe("useKeySequence", () => {
   });
 
   describe("Modifiers in sequence", () => {
-    it("works with modifiers like ctrl+k followed by b", () => {
+    it("works with modifiers like ctrl+k followed by b", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["ctrl+k", "b"],
-            description: "Toggle sidebar",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["ctrl+k", "b"],
+          description: "Toggle sidebar",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "ctrl+k"
-      dispatchKey("k", { ctrl: true });
+      await user.keyboard("{Control>}k{/Control}");
       expect(onComplete).not.toHaveBeenCalled();
 
       // Press "b"
-      dispatchKey("b");
+      await user.keyboard("b");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("works with meta key sequences", () => {
+    it("works with meta key sequences", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["meta+k", "v"],
-            description: "Open view",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["meta+k", "v"],
+          description: "Open view",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "meta+k"
-      dispatchKey("k", { meta: true });
+      await user.keyboard("{Meta>}k{/Meta}");
 
       // Press "v"
-      dispatchKey("v");
+      await user.keyboard("v");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("multiple modifiers in sequence work correctly", () => {
+    it("multiple modifiers in sequence work correctly", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["ctrl+shift+k", "b"],
-            description: "Complex sequence",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["ctrl+shift+k", "b"],
+          description: "Complex sequence",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Press "ctrl+shift+k"
-      dispatchKey("k", { ctrl: true, shift: true });
+      await user.keyboard("{Control>}{Shift>}k{/Shift}{/Control}");
 
       // Press "b"
-      dispatchKey("b");
+      await user.keyboard("b");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("Back-to-back sequences", () => {
-    it("handles back-to-back sequences correctly", () => {
+    it("handles back-to-back sequences correctly", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // First sequence: "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
 
       // Second sequence: "g", "h"
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(2);
     });
 
-    it("buffer is cleared after successful match", () => {
+    it("buffer is cleared after successful match", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Complete sequence
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
 
       // Press unrelated key
-      dispatchKey("x");
+      await user.keyboard("x");
 
       // Press "h" - should not trigger because buffer was cleared
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("enabled prop", () => {
-    it("disabled sequence is ignored", () => {
+    it("disabled sequence is ignored", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            enabled: false,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          enabled: false,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Try to trigger sequence
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
       expect(onComplete).not.toHaveBeenCalled();
     });
 
-    it("enabled=true allows sequence to work", () => {
+    it("enabled=true allows sequence to work", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            enabled: true,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          enabled: true,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("enabled defaults to true when not specified", () => {
+    it("enabled defaults to true when not specified", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go to home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go to home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
@@ -684,36 +777,41 @@ describe("useKeySequence", () => {
   });
 
   describe("Lifecycle", () => {
-    it("unregisters on unmount", () => {
+    it("unregisters on unmount", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      const { unmount } = renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Test",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Test",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      const { unmount } = render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Handler should work before unmount
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
 
       unmount();
 
       // Handler should NOT work after unmount
       onComplete.mockClear();
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
     });
 
     it("re-registers when sequence changes", async () => {
-      vi.useRealTimers(); // Disable fake timers - click() needs real timers to work
-
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
       function TestComponent() {
@@ -730,7 +828,6 @@ describe("useKeySequence", () => {
             data-testid="change-sequence-btn"
             onClick={() => {
               setSequence(["j", "k"]);
-              console.log("button clicked");
             }}
           >
             Change Sequence
@@ -743,24 +840,19 @@ describe("useKeySequence", () => {
           <TestComponent />
         </KeyPressProvider>,
       );
-      console.log(
-        "render component",
-        screen.getByTestId("change-sequence-btn"),
-      );
 
       // Change sequence by clicking button
       await screen.getByTestId("change-sequence-btn").click();
-      console.log("button clicked");
 
-      dispatchKey("g");
-      dispatchKey("h");
+      // Old sequence should not work
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
-      // New sequence should work
-      dispatchKey("j");
-      dispatchKey("k");
-      expect(onComplete).toHaveBeenCalledTimes(1);
 
-      vi.useFakeTimers(); // Restore fake timers for subsequent tests
+      // New sequence should work
+      await user.keyboard("j");
+      await user.keyboard("k");
+      expect(onComplete).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -779,224 +871,271 @@ describe("useKeySequence", () => {
   });
 
   describe("Complex sequences", () => {
-    it("handles three-key sequences", () => {
+    it("handles three-key sequences", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Complex sequence",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Complex sequence",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      dispatchKey("g");
+      await user.keyboard("g");
       expect(onComplete).not.toHaveBeenCalled();
 
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
 
-      dispatchKey("e");
+      await user.keyboard("e");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("handles four-key sequences", () => {
+    it("handles four-key sequences", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "i", "t", "s"],
-            description: "Git status",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "i", "t", "s"],
+          description: "Git status",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      dispatchKey("g");
-      dispatchKey("i");
-      dispatchKey("t");
+      await user.keyboard("g");
+      await user.keyboard("i");
+      await user.keyboard("t");
       expect(onComplete).not.toHaveBeenCalled();
 
-      dispatchKey("s");
+      await user.keyboard("s");
       expect(onComplete).toHaveBeenCalledTimes(1);
     });
 
-    it("wrong key in middle of sequence clears buffer", () => {
+    it("wrong key in middle of sequence clears buffer", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h", "e"],
-            description: "Three key sequence",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h", "e"],
+          description: "Three key sequence",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Start sequence correctly
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
 
       // Press wrong key
-      dispatchKey("x");
+      await user.keyboard("x");
 
       // Complete what would have been the sequence
-      dispatchKey("e");
+      await user.keyboard("e");
 
       expect(onComplete).not.toHaveBeenCalled();
     });
   });
 
   describe("Multiple sequences", () => {
-    it("multiple independent sequences work correctly", () => {
+    it("multiple independent sequences work correctly", async () => {
+      const user = userEvent.setup();
       const onComplete1 = vi.fn();
       const onComplete2 = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go home",
-            onComplete: onComplete1,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go home",
+          onComplete: onComplete1,
+        });
 
-          useKeySequence({
-            sequence: ["g", "i"],
-            description: "Go issues",
-            onComplete: onComplete2,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["g", "i"],
+          description: "Go issues",
+          onComplete: onComplete2,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Trigger first sequence
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete1).toHaveBeenCalledTimes(1);
       expect(onComplete2).not.toHaveBeenCalled();
 
       // Trigger second sequence
       onComplete1.mockClear();
-      dispatchKey("g");
-      dispatchKey("i");
+      await user.keyboard("g");
+      await user.keyboard("i");
       expect(onComplete1).not.toHaveBeenCalled();
       expect(onComplete2).toHaveBeenCalledTimes(1);
     });
 
-    it("sequences with different starting keys work independently", () => {
+    it("sequences with different starting keys work independently", async () => {
+      const user = userEvent.setup();
       const onComplete1 = vi.fn();
       const onComplete2 = vi.fn();
 
-      renderHook(
-        () => {
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go home",
-            onComplete: onComplete1,
-          });
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go home",
+          onComplete: onComplete1,
+        });
 
-          useKeySequence({
-            sequence: ["j", "k"],
-            description: "Move down",
-            onComplete: onComplete2,
-          });
-        },
-        { wrapper: createWrapper() },
+        useKeySequence({
+          sequence: ["j", "k"],
+          description: "Move down",
+          onComplete: onComplete2,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Trigger first
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete1).toHaveBeenCalledTimes(1);
       expect(onComplete2).not.toHaveBeenCalled();
 
       // Trigger second
-      dispatchKey("j");
-      dispatchKey("k");
+      await user.keyboard("j");
+      await user.keyboard("k");
       expect(onComplete1).toHaveBeenCalledTimes(1);
       expect(onComplete2).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("Sequence resets", () => {
-    it("sequence resets after match", () => {
+    it("sequence resets after match", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go home",
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go home",
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Complete sequence
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1);
 
       // Try pressing "h" again (as if buffer wasn't cleared)
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(1); // Should still be 1, not 2
 
       // Complete sequence again
-      dispatchKey("g");
-      dispatchKey("h");
+      await user.keyboard("g");
+      await user.keyboard("h");
       expect(onComplete).toHaveBeenCalledTimes(2);
     });
 
-    it("sequence buffer clears on non-matching key", () => {
+    it("sequence buffer clears on non-matching key", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go home",
-            timeout: 500,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go home",
+          timeout: 500,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Start sequence
-      dispatchKey("g");
+      await user.keyboard("g");
 
       // Press non-matching key
-      dispatchKey("x");
+      await user.keyboard("x");
 
       // Press what would complete the sequence if buffer wasn't cleared
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
     });
 
-    it("sequence buffer clears on partial match after timeout", () => {
+    it("sequence buffer clears on partial match after timeout", async () => {
+      const user = userEvent.setup();
       const onComplete = vi.fn();
 
-      renderHook(
-        () =>
-          useKeySequence({
-            sequence: ["g", "h"],
-            description: "Go home",
-            timeout: 500,
-            onComplete,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeySequence({
+          sequence: ["g", "h"],
+          description: "Go home",
+          timeout: 500,
+          onComplete,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Start sequence
-      dispatchKey("g");
+      await user.keyboard("g");
 
-      vi.advanceTimersByTime(600);
+      // Wait longer than timeout (real wait)
+      await new Promise((res) => setTimeout(res, 600));
 
       // Press what would complete the sequence if buffer wasn't cleared
-      dispatchKey("h");
+      await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
     });
   });

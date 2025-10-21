@@ -3,6 +3,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { render } from "vitest-browser-react";
+import { userEvent } from "@testing-library/user-event";
 import { useKeyPress } from "./use-keypress";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
@@ -17,73 +18,77 @@ const createWrapper = () => {
 
 describe("useKeyPress", () => {
   describe("key prop", () => {
-    it("simple key: registers and triggers handler", () => {
+    it("simple key: registers and triggers handler", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Press K",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Press K",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      // Simulate keydown event
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      // Real keyboard event
+      await user.keyboard("k");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("modifier key: mod+s", () => {
+    it("modifier key: mod+s", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "mod+s",
-            description: "Save",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "mod+s",
+          description: "Save",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      // Simulate meta+s (on Mac)
-      // const event = new KeyboardEvent("keydown", {
-      //   key: "s",
-      //   metaKey: true,
-      // });
-      // Simulate ctrl+s (on Win/Linux)
-      const event = new KeyboardEvent("keydown", {
-        key: "s",
-        ctrlKey: true,
-      });
-      window.dispatchEvent(event);
+      // Real keyboard event - ctrl+s (mod maps to ctrl on Linux)
+      await user.keyboard("{Control>}s{/Control}");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("multiple modifiers: ctrl+shift+k", () => {
+    it("multiple modifiers: ctrl+shift+k", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "ctrl+shift+k",
-            description: "Complex",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "ctrl+shift+k",
+          description: "Complex",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event = new KeyboardEvent("keydown", {
-        key: "k",
-        ctrlKey: true,
-        shiftKey: true,
-      });
-      window.dispatchEvent(event);
+      // Real keyboard event with multiple modifiers
+      await user.keyboard("{Control>}{Shift>}k{/Shift}{/Control}");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
@@ -113,24 +118,28 @@ describe("useKeyPress", () => {
   });
 
   describe("onPress prop", () => {
-    it("is called multiple times for multiple key presses", () => {
+    it("is called multiple times for multiple key presses", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event1 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event1);
-
-      const event2 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event2);
+      // Real keyboard events
+      await user.keyboard("k");
+      await user.keyboard("k");
 
       expect(onPress).toHaveBeenCalledTimes(2);
     });
@@ -176,61 +185,76 @@ describe("useKeyPress", () => {
   });
 
   describe("enabled prop", () => {
-    it("true: handler executes", () => {
+    it("true: handler executes", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            enabled: true,
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          enabled: true,
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      await user.keyboard("k");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("false: handler doesn't register", () => {
+    it("false: handler doesn't register", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            enabled: false,
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          enabled: false,
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      await user.keyboard("k");
 
       expect(onPress).not.toHaveBeenCalled();
     });
 
-    it("undefined: defaults to true", () => {
+    it("undefined: defaults to true", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      await user.keyboard("k");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
@@ -398,22 +422,28 @@ describe("useKeyPress", () => {
   });
 
   describe("eventType prop", () => {
-    it("keydown (default)", () => {
+    it("keydown (default)", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            eventType: "keydown",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          eventType: "keydown",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      // Real keyboard event (triggers keydown)
+      await user.keyboard("k");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
@@ -421,15 +451,20 @@ describe("useKeyPress", () => {
     it("keyup", () => {
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            eventType: "keyup",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          eventType: "keyup",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Keydown should not trigger
@@ -446,15 +481,20 @@ describe("useKeyPress", () => {
     it("keypress", () => {
       const onPress = vi.fn();
 
-      renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            eventType: "keypress",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          eventType: "keypress",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       const event = new KeyboardEvent("keypress", { key: "k" });
@@ -465,94 +505,112 @@ describe("useKeyPress", () => {
   });
 
   describe("Lifecycle", () => {
-    it("unregisters on unmount", () => {
+    it("unregisters on unmount", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
 
-      const { unmount } = renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Test",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent() {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      const { unmount } = render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
       );
 
       // Handler should work before unmount
-      const event1 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event1);
+      await user.keyboard("k");
       expect(onPress).toHaveBeenCalledTimes(1);
 
       unmount();
 
       // Handler should NOT work after unmount
       onPress.mockClear();
-      const event2 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event2);
+      await user.keyboard("k");
       expect(onPress).not.toHaveBeenCalled();
     });
 
     it("re-registers when key changes", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
-      let currentKey = "k";
 
-      const { rerender } = renderHook(
-        () =>
-          useKeyPress({
-            key: currentKey,
-            description: "Test",
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent({ keyBinding }: { keyBinding: string }) {
+        useKeyPress({
+          key: keyBinding,
+          description: "Test",
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      const { rerender } = render(
+        <KeyPressProvider>
+          <TestComponent keyBinding="k" />
+        </KeyPressProvider>,
       );
 
       // Test initial key
-      const event1 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event1);
+      await user.keyboard("k");
       expect(onPress).toHaveBeenCalledTimes(1);
 
       // Change key
-      currentKey = "j";
-      rerender();
+      rerender(
+        <KeyPressProvider>
+          <TestComponent keyBinding="j" />
+        </KeyPressProvider>,
+      );
 
-      await waitFor(() => {
+      await waitFor(async () => {
         // Old key should not work
         onPress.mockClear();
-        const event2 = new KeyboardEvent("keydown", { key: "k" });
-        window.dispatchEvent(event2);
+        await user.keyboard("k");
         expect(onPress).not.toHaveBeenCalled();
 
         // New key should work
-        const event3 = new KeyboardEvent("keydown", { key: "j" });
-        window.dispatchEvent(event3);
+        await user.keyboard("j");
         expect(onPress).toHaveBeenCalledTimes(1);
       });
     });
 
-    it("re-registers when description changes", () => {
+    it("re-registers when description changes", async () => {
+      const user = userEvent.setup();
       const onPress = vi.fn();
-      let currentDescription = "First";
 
-      const { rerender } = renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: currentDescription,
-            onPress,
-          }),
-        { wrapper: createWrapper() },
+      function TestComponent({ description }: { description: string }) {
+        useKeyPress({
+          key: "k",
+          description,
+          onPress,
+        });
+        return <div>Test</div>;
+      }
+
+      const { rerender } = render(
+        <KeyPressProvider>
+          <TestComponent description="First" />
+        </KeyPressProvider>,
       );
 
-      currentDescription = "Second";
-      rerender();
+      rerender(
+        <KeyPressProvider>
+          <TestComponent description="Second" />
+        </KeyPressProvider>,
+      );
 
       // Handler should still work after description change
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      await user.keyboard("k");
       expect(onPress).toHaveBeenCalled();
     });
 
     it("re-registers when callback changes", async () => {
+      const user = userEvent.setup();
+
       function TestComponent() {
         const [count, setCount] = useState(0);
 
@@ -572,17 +630,16 @@ describe("useKeyPress", () => {
         </KeyPressProvider>,
       );
 
-      // dispatch key event
-      const event = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event);
+      // Real keyboard event
+      await user.keyboard("k");
 
       // expect count to be 1
       await waitFor(() => {
         expect(screen.getByText(/1$/i)).toBeInTheDocument();
       });
 
-      // dispatch another key event
-      window.dispatchEvent(event);
+      // Real keyboard event again
+      await user.keyboard("k");
       await waitFor(() => {
         expect(screen.getByText(/2$/i)).toBeInTheDocument();
       });
@@ -604,39 +661,48 @@ describe("useKeyPress", () => {
   });
 
   describe("Advanced event handling", () => {
-    it("listener is removed when last handler with same config unregisters", () => {
+    it("listener is removed when last handler with same config unregisters", async () => {
+      const user = userEvent.setup();
       const onPress1 = vi.fn();
       const onPress2 = vi.fn();
 
-      const { unmount: unmount1 } = renderHook(
-        () =>
-          useKeyPress({
-            key: "k",
-            description: "Handler 1",
-            eventType: "keydown",
-            onPress: onPress1,
-          }),
-        { wrapper: createWrapper() },
+      function Component1() {
+        useKeyPress({
+          key: "k",
+          description: "Handler 1",
+          eventType: "keydown",
+          onPress: onPress1,
+        });
+        return <div>Component1</div>;
+      }
+
+      function Component2() {
+        useKeyPress({
+          key: "j",
+          description: "Handler 2",
+          eventType: "keydown",
+          onPress: onPress2,
+        });
+        return <div>Component2</div>;
+      }
+
+      const { unmount: unmount1 } = render(
+        <KeyPressProvider>
+          <Component1 />
+        </KeyPressProvider>,
       );
 
-      const { unmount: unmount2 } = renderHook(
-        () =>
-          useKeyPress({
-            key: "j",
-            description: "Handler 2",
-            eventType: "keydown",
-            onPress: onPress2,
-          }),
-        { wrapper: createWrapper() },
+      const { unmount: unmount2 } = render(
+        <KeyPressProvider>
+          <Component2 />
+        </KeyPressProvider>,
       );
 
       // Both should work
-      const event1 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event1);
+      await user.keyboard("k");
       expect(onPress1).toHaveBeenCalledTimes(1);
 
-      const event2 = new KeyboardEvent("keydown", { key: "j" });
-      window.dispatchEvent(event2);
+      await user.keyboard("j");
       expect(onPress2).toHaveBeenCalledTimes(1);
 
       // Unmount first handler
@@ -645,12 +711,10 @@ describe("useKeyPress", () => {
       onPress2.mockClear();
 
       // First handler should not work, second should still work
-      const event3 = new KeyboardEvent("keydown", { key: "k" });
-      window.dispatchEvent(event3);
+      await user.keyboard("k");
       expect(onPress1).not.toHaveBeenCalled();
 
-      const event4 = new KeyboardEvent("keydown", { key: "j" });
-      window.dispatchEvent(event4);
+      await user.keyboard("j");
       expect(onPress2).toHaveBeenCalledTimes(1);
 
       // Unmount second handler
@@ -658,8 +722,7 @@ describe("useKeyPress", () => {
       onPress2.mockClear();
 
       // Neither should work after both unmounted
-      const event5 = new KeyboardEvent("keydown", { key: "j" });
-      window.dispatchEvent(event5);
+      await user.keyboard("j");
       expect(onPress2).not.toHaveBeenCalled();
     });
 
