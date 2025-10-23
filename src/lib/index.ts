@@ -1,5 +1,7 @@
 // Main exports
 export { useKeyPress } from "./hooks/use-keypress";
+export { useKeySequence } from "./hooks/use-keysequence";
+export { useGroupedHandlers } from "./hooks/use-handlers";
 // export { useKeySequence } from "./hooks/use-key-sequence";
 export { KeyPressDialog } from "./components/KeyPressDialog";
 export { KeyPressProvider } from "./context/provider";
