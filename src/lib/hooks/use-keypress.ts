@@ -2,39 +2,32 @@ import { useEffect, useRef } from "react";
 import type { KeyPressConfig } from "../types";
 import { useKeyPressContext } from "../context/provider";
 
-// export function useKeyPress(config: KeyPressConfig) {
-//   const context = useKeyPressContext();
-//   const callbackRef = useRef(config.onPress);
-
-//   useEffect(() => {
-//     callbackRef.current = config.onPress;
-//   });
-
-//   useEffect(() => {
-//     const id = context.registerHandler({
-//       ...config,
-//       onPress: callbackRef.current,
-//     });
-//     return () => context.unregisterHandler(id);
-//   }, [
-//     context,
-//     config.category,
-//     config.description,
-//     config.enabled,
-//     config.key,
-//     config.preventDefault,
-//   ]);
-// }
-//
-
 export function useKeyPress(config: KeyPressConfig) {
-  // debugger;
   const { instance } = useKeyPressContext();
 
+  // Keep callback reference up to date without causing re-registration
+  const callbackRef = useRef(config.onPress);
+  callbackRef.current = config.onPress;
+
+  const idRef = useRef<number | undefined>(null);
+
+  // Register/update when config changes
   useEffect(() => {
-    const id = instance.registerHandler(config);
-    return () => {
-      instance.unregisterHandler(id);
-    };
+    idRef.current = instance.registerHandler(
+      {
+        ...config,
+        onPress: () => callbackRef.current(),
+      },
+      idRef.current,
+    );
   }, [instance, config]);
+
+  // Cleanup on unmount only
+  useEffect(() => {
+    return () => {
+      if (idRef.current) {
+        instance.unregisterHandler(idRef.current);
+      }
+    };
+  }, [instance]);
 }

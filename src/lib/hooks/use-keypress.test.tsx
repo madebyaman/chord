@@ -536,6 +536,101 @@ describe("useKeyPress", () => {
       expect(onPress).not.toHaveBeenCalled();
     });
 
+    it("does NOT re-register when component re-renders with same config values", () => {
+      const consoleLogSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      const onPress = vi.fn();
+
+      function TestComponent({ trigger }: { trigger: number }) {
+        // Config object is recreated on every render, but values are same
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          category: "Testing",
+          onPress, // Same function reference
+        });
+        return <div>{trigger}</div>;
+      }
+
+      const { rerender } = render(
+        <KeyPressProvider>
+          <TestComponent trigger={1} />
+        </KeyPressProvider>,
+      );
+
+      // Check initial registration
+      const initialRegisterCalls = consoleLogSpy.mock.calls.filter(
+        (call) => call[0] === "[REGISTER]: registering",
+      ).length;
+
+      expect(initialRegisterCalls).toBeGreaterThan(0);
+
+      consoleLogSpy.mockClear();
+
+      // Force re-render (config object reference changes, values don't)
+      rerender(
+        <KeyPressProvider>
+          <TestComponent trigger={2} />
+        </KeyPressProvider>,
+      );
+
+      // Should NOT see new [REGISTER] or [UNREGISTER] calls
+      const registerCalls = consoleLogSpy.mock.calls.filter(
+        (call) => call[0] === "[REGISTER]: registering",
+      ).length;
+      const unregisterCalls = consoleLogSpy.mock.calls.filter((call) =>
+        call[0]?.toString().includes("[UNREGISTER]"),
+      ).length;
+
+      expect(registerCalls).toBe(0);
+      expect(unregisterCalls).toBe(0);
+
+      consoleLogSpy.mockRestore();
+    });
+
+    it("uses latest callback on each invocation even when callback changes", async () => {
+      const user = userEvent.setup();
+
+      function TestComponent() {
+        const [count, setCount] = useState(0);
+
+        // Callback changes every render (captures count in closure)
+        // But should not cause re-registration
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          onPress: () => setCount((c) => c + 1),
+        });
+
+        return <div data-testid="count">{count}</div>;
+      }
+
+      const screen = render(
+        <KeyPressProvider>
+          <TestComponent />
+        </KeyPressProvider>,
+      );
+
+      // Press key multiple times
+      await user.keyboard("k");
+      await waitFor(() =>
+        expect(screen.getByTestId("count")).toHaveTextContent("1"),
+      );
+
+      await user.keyboard("k");
+      await waitFor(() =>
+        expect(screen.getByTestId("count")).toHaveTextContent("2"),
+      );
+
+      await user.keyboard("k");
+      await waitFor(() =>
+        expect(screen.getByTestId("count")).toHaveTextContent("3"),
+      );
+
+      // Count should increment correctly using latest closure
+    });
+
     it("re-registers when key changes", async () => {
       const user = userEvent.setup();
       const onPress = vi.fn();
