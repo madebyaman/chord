@@ -109,7 +109,7 @@ describe("useKeyPress", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       const handler = handlers.find(
         (h) => h.description === "My custom description",
       );
@@ -160,7 +160,7 @@ describe("useKeyPress", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       expect(handlers[0].category).toBe("General");
     });
 
@@ -179,7 +179,7 @@ describe("useKeyPress", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       expect(handlers[0].category).toBe("File");
     });
   });

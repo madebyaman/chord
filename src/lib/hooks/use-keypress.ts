@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { KeyPressConfig } from "../types";
 import { useKeyPressContext } from "../context/provider";
 
@@ -28,10 +28,13 @@ import { useKeyPressContext } from "../context/provider";
 //
 
 export function useKeyPress(config: KeyPressConfig) {
-  const context = useKeyPressContext();
+  // debugger;
+  const { instance } = useKeyPressContext();
 
   useEffect(() => {
-    const id = context.registerHandler(config);
-    return () => context.unregisterHandler(id);
-  }, [context, config]);
+    const id = instance.registerHandler(config);
+    return () => {
+      instance.unregisterHandler(id);
+    };
+  }, [instance, config]);
 }

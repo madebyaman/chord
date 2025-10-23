@@ -726,7 +726,7 @@ describe("useKeySequence", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       const handler = handlers.find(
         (h) => h.description === "My custom sequence",
       );
@@ -750,7 +750,7 @@ describe("useKeySequence", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       const handler = handlers.find((h) => h.description === "Test");
       expect(handler?.category).toBe("General");
     });
@@ -770,7 +770,7 @@ describe("useKeySequence", () => {
         { wrapper: createWrapper() },
       );
 
-      const handlers = result.current.getHandlers();
+      const handlers = result.current.instance.handlers;
       const handler = handlers.find((h) => h.description === "Test");
       expect(handler?.category).toBe("Navigation");
     });

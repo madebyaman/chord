@@ -3,10 +3,10 @@ import type { KeySequenceConfig } from "../types";
 import { useKeyPressContext } from "../context/provider";
 
 export function useKeySequence(config: KeySequenceConfig) {
-  const context = useKeyPressContext();
+  const { instance } = useKeyPressContext();
 
   useEffect(() => {
-    const id = context.registerHandler(config);
-    return () => context.unregisterHandler(id);
-  }, [context, config]);
+    const id = instance.registerHandler(config);
+    return () => instance.unregisterHandler(id);
+  }, [instance, config]);
 }
