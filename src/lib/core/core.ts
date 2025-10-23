@@ -17,19 +17,43 @@ export class ChordCore {
   /** Unified keyboard manager for both key presses and sequences */
   private keyboardManager = new KeyboardManager();
 
+  /** Subscribers that get notified when handlers change */
+  private subscribers = new Set<() => void>();
+
   /** Generate unique ID for handlers */
   private generateId(): number {
     return ++this.idCounter;
   }
 
+  /** Subscribe to handler changes. Returns unsubscribe function */
+  subscribe(callback: () => void): () => void {
+    this.subscribers.add(callback);
+    this.notify(); // Notify immediately to tell latest updates
+    return () => {
+      this.subscribers.delete(callback);
+    };
+  }
+
+  /** Notify all subscribers of handler changes */
+  private notify(): void {
+    console.log("notifying subscriber");
+    this.subscribers.forEach((callback) => callback());
+  }
+
   /** Get handlers for a given sequence (for conflict detection) */
   private getHandlersBySequence(sequence: string[]): HandlerInfo[] {
-    const allHandlers = this.keyboardManager.getAll();
-    return allHandlers.filter(
-      (handler) =>
-        handler.keySequence.length === sequence.length &&
-        handler.keySequence.every((key, i) => key === sequence[i]),
-    );
+    return Array.from(this.keyboardManager.handlers.values())
+      .map((handler) => ({
+        keySequence: handler.sequence,
+        description: handler.description,
+        category: handler.category,
+        component: handler.component,
+      }))
+      .filter(
+        (handler) =>
+          handler.keySequence.length === sequence.length &&
+          handler.keySequence.every((key, i) => key === sequence[i]),
+      );
   }
 
   /**
@@ -54,6 +78,7 @@ export class ChordCore {
       this.warnConflict(handler.sequence.join(" "), existingHandlers);
     }
 
+    this.notify();
     return id;
   }
 
@@ -63,13 +88,21 @@ export class ChordCore {
   unregisterHandler(id: number | undefined) {
     if (!id) return;
     this.keyboardManager.unregister(id);
+    this.notify();
   }
 
   /**
    * Get all registered handlers
    */
-  getHandlers(): HandlerInfo[] {
-    return this.keyboardManager.getAll();
+  get handlers(): HandlerInfo[] {
+    return Array.from(this.keyboardManager.handlers.values()).map(
+      (handler) => ({
+        keySequence: handler.sequence,
+        description: handler.description,
+        category: handler.category,
+        component: handler.component,
+      }),
+    );
   }
 
   /**
@@ -78,7 +111,7 @@ export class ChordCore {
   getConflicts(): ShortcutConflict[] {
     const sequenceMap = new Map<string, HandlerInfo[]>();
 
-    const allHandlers = this.getHandlers();
+    const allHandlers = this.handlers;
 
     for (const handler of allHandlers) {
       // Use keySequence joined with comma as the key

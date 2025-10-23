@@ -3,8 +3,6 @@ import type {
   KeyPressConfig,
   KeySequenceConfig,
   ListenerGroup,
-  KeyManager,
-  HandlerInfo,
 } from "../types";
 import { normalizeShortcut, normalizeEvent } from "../utils/key-normalization";
 
@@ -55,10 +53,8 @@ interface KeyboardHandler {
  * Handles both single key presses and multi-key sequences
  * Implements the KeyManager interface for registration and cleanup
  */
-export class KeyboardManager
-  implements KeyManager<KeyPressConfig | KeySequenceConfig, KeyboardHandler>
-{
-  private handlers: Map<number, KeyboardHandler> = new Map();
+export class KeyboardManager {
+  public handlers: Map<number, KeyboardHandler> = new Map();
 
   /** Persistent listeners for window only. Key is eventType like keydown. It  is used so we can have one listener per eventType. */
   private listeners: Map<string, ListenerGroup> = new Map();
@@ -178,7 +174,9 @@ export class KeyboardManager
       if (fullMatches.length > 0) {
         console.log("[KEYBOARD]: full match");
         if (partialMatches.length > 0) {
-          console.log("[KEYBOARD]: full and partial match - waiting for timeout");
+          console.log(
+            "[KEYBOARD]: full and partial match - waiting for timeout",
+          );
           // Ambiguous case: "g" matches but "g h" might also match
           // We need to wait before executing to see if the sequence continues
           // Note: preventDefault cannot be applied here since we need to wait
@@ -345,18 +343,5 @@ export class KeyboardManager
     }
 
     this.handlers.delete(id);
-  }
-
-  /**
-   * Get all registered handlers as simplified info objects
-   * @returns Array of handler info (keySequence, description, category, component)
-   */
-  getAll(): HandlerInfo[] {
-    return Array.from(this.handlers.values()).map((handler) => ({
-      keySequence: handler.sequence,
-      description: handler.description,
-      category: handler.category,
-      component: handler.component,
-    }));
   }
 }
