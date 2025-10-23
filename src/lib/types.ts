@@ -171,18 +171,3 @@ export interface HandlerInfo {
   category: string;
   component: string;
 }
-
-/**
- * Generic interface for keyboard shortcut managers
- * Implemented by KeyboardManager class
- */
-export interface KeyManager<TConfig, THandler> {
-  /** Register a handler with a pre-generated ID from Core */
-  register(config: TConfig, id: number): THandler;
-
-  /** Unregister a handler by ID */
-  unregister(id: number): void;
-
-  /** Get all registered handlers as simplified info objects */
-  getAll(): HandlerInfo[];
-}
