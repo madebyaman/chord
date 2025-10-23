@@ -1,20 +1,73 @@
 import "./style.css";
 import { useState, useMemo } from "react";
-import { useGroupedHandlers } from "../hooks/use-handlers";
+import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
 import Drawer from "./drawer";
+import {
+  Command,
+  ArrowBigUp,
+  CornerDownLeft,
+  Delete,
+  Option,
+} from "lucide-react";
 
-interface KeyPressDialogProps {
+interface ShortcutsDialogProps {
   helpKey?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const KeyPressDialog = ({
+// Helper function to get icon for a single key part
+const getKeyIcon = (key: string, size: number = 14) => {
+  const lowerKey = key.toLowerCase();
+  const iconProps = { className: "shrink-0", size, strokeWidth: 2 };
+
+  if (
+    lowerKey === "ctrl" ||
+    lowerKey === "control" ||
+    lowerKey === "cmd" ||
+    lowerKey === "command" ||
+    lowerKey === "⌘"
+  ) {
+    return <Command {...iconProps} />;
+  }
+  if (lowerKey === "shift" || lowerKey === "⇧") {
+    return <ArrowBigUp {...iconProps} />;
+  }
+  if (lowerKey === "enter" || lowerKey === "return" || lowerKey === "↵") {
+    return <CornerDownLeft {...iconProps} />;
+  }
+  if (lowerKey === "backspace" || lowerKey === "delete" || lowerKey === "⌫") {
+    return <Delete {...iconProps} />;
+  }
+  if (lowerKey === "alt" || lowerKey === "option" || lowerKey === "⌥") {
+    return <Option {...iconProps} />;
+  }
+
+  return null;
+};
+
+// Helper function to render a key combination (e.g., "cmd+shift+s")
+const renderKeyCombo = (keyCombo: string, iconSize: number = 14) => {
+  const parts = keyCombo.split("+");
+
+  return parts.map((part, index) => {
+    const icon = getKeyIcon(part.trim(), iconSize);
+    const content = icon || part.trim().toUpperCase();
+
+    return (
+      <span key={index} className="leading-none align-middle text-base">
+        {content}
+      </span>
+    );
+  });
+};
+
+export const ShortcutsDialog = ({
   helpKey = "?",
   isOpen,
   onClose,
-}: KeyPressDialogProps) => {
-  const { handlers, groupedHandlers } = useGroupedHandlers();
+}: ShortcutsDialogProps) => {
+  const { handlers, groupedHandlers } = useKeyboardShortcuts();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter handlers based on search query
@@ -88,14 +141,17 @@ export const KeyPressDialog = ({
                         {handler.description}
                       </span>
                       <div className="flex gap-1">
-                        {handler.keySequence.map((key, idx) => (
-                          <kbd
-                            key={idx}
-                            className="px-2 py-1 rounded text-xs font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800"
-                          >
-                            {key}
-                          </kbd>
-                        ))}
+                        {handler.keySequence.map((key, idx) => {
+                          return (
+                            <kbd
+                              key={idx}
+                              title={key}
+                              className="px-2 py-1 rounded font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800 inline-flex gap-1 items-center uppercase text-sm"
+                            >
+                              {renderKeyCombo(key)}
+                            </kbd>
+                          );
+                        })}
                       </div>
                     </li>
                   ))}
@@ -107,8 +163,8 @@ export const KeyPressDialog = ({
 
         <div className="mt-4 text-xs text-gray-600 dark:text-gray-500">
           Press{" "}
-          <kbd className="px-2 py-1 rounded text-xs font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800">
-            {helpKey}
+          <kbd className="px-2 py-1 rounded text-xs font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800 inline-flex gap-1 items-center">
+            {renderKeyCombo(helpKey, 11)}
           </kbd>{" "}
           to toggle this dialog
         </div>

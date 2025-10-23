@@ -1,6 +1,6 @@
 import { useKeyPressContext } from "../context/provider";
 
-export const useGroupedHandlers = () => {
+export const useKeyboardShortcuts = () => {
   const { instance } = useKeyPressContext();
   const handlers = instance.handlers;
 

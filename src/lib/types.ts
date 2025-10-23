@@ -147,7 +147,7 @@ export interface KeyPressContextValue {
   closeHelpModal: () => void;
 }
 
-export interface KeyPressDialogProps {
+export interface ShortcutsDialogProps {
   /** Key to open help modal (default: "?") */
   helpKey?: string;
 

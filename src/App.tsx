@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import "./App.css";
 import {
-  KeyPressDialog,
-  useGroupedHandlers,
+  ShortcutsDialog,
+  useKeyboardShortcuts,
   useKeyPress,
   useKeySequence,
 } from "./lib";
@@ -109,7 +109,7 @@ function ShortCutDialog() {
   return (
     <>
       <button onClick={() => setIsOpen(true)}>Show Shortcuts</button>
-      <KeyPressDialog
+      <ShortcutsDialog
         helpKey="?"
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

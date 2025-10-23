@@ -7,7 +7,7 @@ import { KeyPressProvider } from "../context/provider";
 import { useKeyPress } from "../hooks/use-keypress";
 import { useState } from "react";
 
-describe("KeyPressDialog", () => {
+describe("ShortcutsDialog", () => {
   let user: ReturnType<typeof userEvent.setup>;
 
   beforeEach(() => {
