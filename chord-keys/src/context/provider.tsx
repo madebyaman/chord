@@ -8,7 +8,7 @@ interface ChordContextValue {
 
 const ChordContext = createContext<ChordContextValue | null>(null);
 
-const KeyPressProvider = ({ children, ...props }: KeyPressProviderProps) => {
+const KeyPressProvider = ({ children }: KeyPressProviderProps) => {
   const [instance] = useState(() => new ChordCore());
 
   return (

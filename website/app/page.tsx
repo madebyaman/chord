@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
-import "./App.css";
+"use client";
+
+import { useState } from "react";
 import {
   ShortcutsDialog,
-  useKeyboardShortcuts,
   useKeyPress,
   useKeySequence,
-} from "./lib";
+} from "chord-keys";
 
-function App() {
+export default function Home() {
   const [count, setCount] = useState(0);
   const [enabled, setEnabled] = useState(false);
 
@@ -94,11 +94,24 @@ function App() {
   });
 
   return (
-    <div>
-      The count is {count}.{" "}
-      <button onClick={() => setEnabled(true)}>Unrelated change</button>
+    <main className="min-h-screen p-8">
+      <h1 className="text-4xl font-bold mb-4">Chord Keys Demo</h1>
+      <p className="text-lg mb-8">
+        Advanced keyboard shortcuts library for React
+      </p>
+
+      <div className="mb-4">
+        <p className="text-2xl">The count is {count}</p>
+        <button
+          onClick={() => setEnabled(true)}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Enable first shortcut
+        </button>
+      </div>
+
       <ShortCutDialog />
-    </div>
+    </main>
   );
 }
 
@@ -108,13 +121,23 @@ function ShortCutDialog() {
 
   return (
     <>
-      <button onClick={() => setIsOpen(true)}>Show Shortcuts</button>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
+      >
+        Show Shortcuts
+      </button>
       <ShortcutsDialog
         helpKey="?"
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
       />
-      <button onClick={() => setShow(!show)}>Mount Another hook</button>
+      <button
+        onClick={() => setShow(!show)}
+        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+      >
+        Mount Another Hook
+      </button>
       {show && <Watcher />}
     </>
   );
@@ -136,5 +159,3 @@ function Watcher() {
 
   return null;
 }
-
-export default App;

@@ -55,7 +55,7 @@ const renderKeyCombo = (keyCombo: string, iconSize: number = 14) => {
     const content = icon || part.trim().toUpperCase();
 
     return (
-      <span key={index} className="leading-none align-middle text-base">
+      <span key={index} className="key-combo-part">
         {content}
       </span>
     );
@@ -106,47 +106,47 @@ export const ShortcutsDialog = ({
         <Drawer.Title>Keyboard Shortcuts</Drawer.Title>
         <Drawer.Close />
       </Drawer.Header>
-      <div className="px-5 pt-4">
+      <div className="shortcuts-search-wrapper">
         <input
           type="text"
           placeholder="Search shortcuts..."
           autoFocus
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-2 mb-4 rounded border text-sm outline-none focus:ring-2 bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:ring-blue-500 dark:focus:ring-neutral-600"
+          className="shortcuts-search-input"
         />
       </div>
 
       <Drawer.Content>
         {filteredHandlers.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="shortcuts-empty">
             {searchQuery
               ? "No shortcuts match your search."
               : "No keyboard shortcuts registered yet."}
           </p>
         ) : (
-          <div className="space-y-6">
+          <div className="shortcuts-list">
             {filteredGroupedHandlers.map(([category, categoryHandlers]) => (
-              <div key={category}>
-                <h3 className="text-xs font-semibold uppercase tracking-wide mb-2 text-gray-600 dark:text-gray-400">
+              <div key={category} className="shortcuts-category">
+                <h3 className="shortcuts-category-title">
                   {category}
                 </h3>
-                <ul className="space-y-0">
+                <ul className="shortcuts-items">
                   {categoryHandlers.map((handler) => (
                     <li
                       key={handler.keySequence.join("")}
-                      className="py-3 flex justify-between items-center border-b last:border-b-0 border-gray-200 dark:border-neutral-800"
+                      className="shortcuts-item"
                     >
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
+                      <span className="shortcuts-item-description">
                         {handler.description}
                       </span>
-                      <div className="flex gap-1">
+                      <div className="shortcuts-item-keys">
                         {handler.keySequence.map((key, idx) => {
                           return (
                             <kbd
                               key={idx}
                               title={key}
-                              className="px-2 py-1 rounded font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800 inline-flex gap-1 items-center uppercase text-sm"
+                              className="shortcuts-kbd"
                             >
                               {renderKeyCombo(key)}
                             </kbd>
@@ -161,9 +161,9 @@ export const ShortcutsDialog = ({
           </div>
         )}
 
-        <div className="mt-4 text-xs text-gray-600 dark:text-gray-500">
+        <div className="shortcuts-footer">
           Press{" "}
-          <kbd className="px-2 py-1 rounded text-xs font-mono border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-neutral-800 inline-flex gap-1 items-center">
+          <kbd className="shortcuts-kbd shortcuts-kbd-small">
             {renderKeyCombo(helpKey, 11)}
           </kbd>{" "}
           to toggle this dialog

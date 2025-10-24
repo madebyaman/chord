@@ -1,6 +1,13 @@
-# Chord - Advanced Key Press Hook for React
+# Chord - Advanced Keyboard Shortcuts for React
 
-A powerful and developer-friendly React hook for managing keyboard shortcuts with built-in conflict detection and a discoverable shortcut interface.
+A powerful and developer-friendly React library for managing keyboard shortcuts with built-in conflict detection and a discoverable shortcut interface.
+
+## Monorepo Structure
+
+This is a Turborepo monorepo containing:
+
+- **chord-keys** - The core keyboard shortcuts library (Vite + Tailwind CSS v4)
+- **website** - Documentation and demo website (Next.js 16 + Tailwind CSS v4)
 
 ## What Makes Chord Different?
 
@@ -11,17 +18,9 @@ Unlike typical React key press hooks, Chord provides:
 3. **Superior UX** - Visual feedback for key conflicts, making debugging and development easier
 4. **Centralized Management** - Single source of truth for all keyboard shortcuts in your app
 
-## Features
+## Getting Started
 
-- **Shortcut Registry**: Automatically maintains a registry of all registered shortcuts
-- **Conflict Detection**: Warns developers when multiple handlers are registered for the same key combination
-- **Help Modal**: Built-in UI to display all available shortcuts (triggered by `?` by default)
-- **TypeScript Support**: Full TypeScript support with type-safe key definitions
-- **Customizable**: Configure help key and UI theme
-- **Performance**: Efficient event handling with automatic cleanup
-- **Conditional Activation**: Enable/disable shortcuts based on application state
-
-## Installation
+### Installation
 
 ```bash
 npm install chord-keys
@@ -31,7 +30,7 @@ yarn add chord-keys
 pnpm add chord-keys
 ```
 
-## Quick Start
+### Quick Start
 
 ```tsx
 import { useKeyPress, KeyPressProvider } from 'chord-keys';
@@ -52,110 +51,58 @@ function YourComponent() {
     onPress: () => console.log('Command palette opened'),
   });
 
-  // With conflict detection
-  useKeyPress({
-    key: 'cmd+s',
-    description: 'Save document',
-    onPress: handleSave,
-    category: 'Document',
-  });
-
   return <div>Your content</div>;
 }
 ```
 
-## Usage Examples
-
-### Viewing All Shortcuts
-
-Press `?` (question mark) anywhere in your app to see all registered shortcuts. The modal will show:
-- All available shortcuts grouped by category
-- Key combinations in a readable format
-- Descriptions for each shortcut
-- **Conflicts highlighted in red**
-
-### Detecting Conflicts
-
-When multiple handlers are registered for the same key:
-
-```tsx
-// Component A
-useKeyPress({
-  key: 'cmd+k',
-  description: 'Open search',
-  onPress: openSearch,
-});
-
-// Component B (conflict!)
-useKeyPress({
-  key: 'cmd+k',
-  description: 'Open command palette',
-  onPress: openCommandPalette,
-});
-```
-
-Chord will:
-- Warn you in the console during development
-- Highlight the conflict in the help modal (with component source if available)
-- Execute only the first registered handler
-
-### Conditional Enabling
-
-```tsx
-useKeyPress({
-  key: 'cmd+shift+p',
-  description: 'Toggle preview',
-  category: 'View',
-  onPress: togglePreview,
-  enabled: isEditorFocused, // Only active when editor is focused
-});
-```
-
-## API
-
-### `<KeyPressProvider>`
-
-Wrap your app with this provider to enable the key press system.
-
-```tsx
-<KeyPressProvider
-  helpKey="?" // Key to open help modal (default: "?")
-  theme="dark" // "light" or "dark" (default: "light")
->
-  {children}
-</KeyPressProvider>
-```
-
-### `useKeyPress(options)`
-
-Register a keyboard shortcut handler.
-
-**Options:**
-- `key: string` - Key combination (e.g., "cmd+k", "ctrl+shift+s")
-- `description: string` - Human-readable description
-- `onPress: () => void` - Handler function
-- `category?: string` - Group shortcuts by category in help modal
-- `enabled?: boolean` - Conditionally enable/disable (default: true)
-- `preventDefault?: boolean` - Prevent default browser behavior (default: true)
-
 ## Development
+
+This monorepo uses [Turborepo](https://turbo.build/repo) and npm workspaces.
+
+### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
-# Run development server
-pnpm dev
+# Run development servers for all packages
+npm run dev
 
-# Build library
-pnpm build
+# Build all packages
+npm run build
 
 # Run tests
-pnpm test
+npm run test
 
-# Type check
-pnpm type-check
+# Lint all packages
+npm run lint
 ```
+
+### Working with Individual Packages
+
+```bash
+# Work on the library
+cd chord-keys
+npm run dev
+
+# Work on the website
+cd website
+npm run dev
+```
+
+## Features
+
+- **Shortcut Registry**: Automatically maintains a registry of all registered shortcuts
+- **Conflict Detection**: Warns developers when multiple handlers are registered for the same key combination
+- **Help Modal**: Built-in UI to display all available shortcuts (triggered by `?` by default)
+- **TypeScript Support**: Full TypeScript support with type-safe key definitions
+- **Customizable**: Configure help key and UI theme
+- **Performance**: Efficient event handling with automatic cleanup
+- **Conditional Activation**: Enable/disable shortcuts based on application state
+
+## API Documentation
+
+See the [website](./website) for full API documentation and examples.
 
 ## Contributing
 
@@ -167,4 +114,4 @@ MIT
 
 ## Acknowledgments
 
-Built with React, TypeScript, and modern web APIs. Inspired by the need for better keyboard shortcut management in complex applications.
+Built with React, TypeScript, Vite, Next.js, and Tailwind CSS. Inspired by the need for better keyboard shortcut management in complex applications.

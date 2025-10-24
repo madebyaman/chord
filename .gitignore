@@ -7,10 +7,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build outputs
 dist
 dist-ssr
+.next
 *.local
+
+# Turborepo
+.turbo
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +31,7 @@ dist-ssr
 *.sw?
 CLAUDE.md
 tasks/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

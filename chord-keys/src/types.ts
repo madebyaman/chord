@@ -132,7 +132,7 @@ export interface KeyPressContextValue {
   unregister: (id: string) => void;
 
   /** Get all registered handlers */
-  getHandlers: () => ShortcutHandler[];
+  getHandlers: () => HandlerInfo[];
 
   /** Get all conflicts */
   getConflicts: () => ShortcutConflict[];

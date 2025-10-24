@@ -9,7 +9,7 @@ export function useKeySequence(config: KeySequenceConfig) {
   const callbackRef = useRef(config.onComplete);
   callbackRef.current = config.onComplete;
 
-  const idRef = useRef<number>();
+  const idRef = useRef<number | undefined>(undefined);
 
   // Register/update when config changes
   useEffect(() => {

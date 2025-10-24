@@ -1,3 +1,6 @@
+// Import styles
+import "./index.css";
+
 // Main exports
 export { useKeyPress } from "./hooks/use-keypress";
 export { useKeySequence } from "./hooks/use-keysequence";
