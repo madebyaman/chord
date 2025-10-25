@@ -71,10 +71,10 @@ export class ChordCore {
 
     // Check for conflicts and warn in development
     const existingHandlers = this.getHandlersBySequence(handler.sequence);
-    if (
-      (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") &&
-      existingHandlers.length > 1
-    ) {
+    const isDev = typeof (globalThis as any).process !== 'undefined' &&
+      ((globalThis as any).process.env.NODE_ENV === "development" ||
+       (globalThis as any).process.env.NODE_ENV === "test");
+    if (isDev && existingHandlers.length > 1) {
       this.warnConflict(handler.sequence.join(" "), existingHandlers);
     }
 
