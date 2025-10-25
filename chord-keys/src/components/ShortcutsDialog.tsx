@@ -101,7 +101,7 @@ export const ShortcutsDialog = ({
   }, [filteredHandlers, groupedHandlers, searchQuery]);
 
   return (
-    <Drawer.Root open={isOpen} onOpenChange={onClose}>
+    <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Drawer.Header>
         <Drawer.Title>Keyboard Shortcuts</Drawer.Title>
         <Drawer.Close />

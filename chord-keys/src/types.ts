@@ -150,12 +150,6 @@ export interface KeyPressContextValue {
 export interface ShortcutsDialogProps {
   /** Key to open help modal (default: "?") */
   helpKey?: string;
-
-  /** Theme for help modal (default: "light") */
-  theme?: "light" | "dark";
-
-  /** Whether to show conflicts in console and help modal (default: true in dev) */
-  showConflicts?: boolean;
 }
 
 /**

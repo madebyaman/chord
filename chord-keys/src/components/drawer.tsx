@@ -51,7 +51,7 @@ function DrawerTitle({ children }: DrawerTitleProps) {
 
 function DrawerClose() {
   return (
-    <Dialog.Close className="drawer-close">
+    <Dialog.Close className="drawer-close" aria-label="Close">
       <XIcon className="drawer-close-icon" />
     </Dialog.Close>
   );
