@@ -1,25 +1,25 @@
 {
-  "name": "chord-keys",
+  "name": "chord-key",
   "version": "0.1.0",
   "type": "module",
   "description": "Advanced keyboard shortcuts library for React with built-in conflict detection and discoverable shortcuts",
-  "main": "./dist/chord-keys.cjs",
-  "module": "./dist/chord-keys.js",
-  "types": "./dist/chord-keys.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": {
         "development": "./src/index.ts",
-        "default": "./dist/chord-keys.d.ts"
+        "default": "./dist/index.d.ts"
       },
       "development": "./src/index.ts",
-      "import": "./dist/chord-keys.js",
-      "require": "./dist/chord-keys.cjs",
-      "default": "./dist/chord-keys.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./style.css": {
       "development": "./src/index.css",
-      "default": "./dist/chord-keys.css"
+      "default": "./dist/index.css"
     }
   },
   "files": [
@@ -30,11 +30,20 @@
   "scripts": {
     "lint": "eslint .",
     "test": "vitest",
-    "prepublishOnly": "cp ../README.md . && npm build",
+    "prepublishOnly": "cp ../README.md . && npm run build",
     "postpublish": "rm README.md",
-    "build": "tsup",
+    "build": "rm -rf dist && tsup",
     "dev": "tsup --watch"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.4",
     "lucide-react": "^0.546.0"
@@ -81,7 +90,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/madebyaman/chord.git",
-    "directory": "chord-keys"
+    "directory": "chord-key"
   },
   "bugs": {
     "url": "https://github.com/madebyaman/chord/issues"

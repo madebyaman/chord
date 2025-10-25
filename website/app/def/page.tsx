@@ -1,6 +1,6 @@
 "use client"
 
-import { useKeyPress, useKeyboardShortcuts } from "chord-keys";
+import { useKeyPress, useKeyboardShortcuts } from "chord-key";
 import { use, useState } from "react";
 
 export default function Page()  {

@@ -1,10 +1,10 @@
-# chord
+# chord-key
 
 a keyboard shortcuts library for react with built-in conflict detection and discoverable shortcuts.
 
-## what is chord?
+## what is chord-key?
 
-chord makes keyboard shortcuts in react apps easy to manage. unlike typical key press hooks, chord provides:
+chord-key makes keyboard shortcuts in react apps easy to manage. unlike typical key press hooks, chord-key provides:
 
 - **discoverable shortcuts** - press `?` to see all available shortcuts
 - **conflict detection** - warns you when multiple handlers use the same key
@@ -15,11 +15,11 @@ chord makes keyboard shortcuts in react apps easy to manage. unlike typical key 
 ## installation
 
 ```bash
-npm install chord-keys
+npm install chord-key
 # or
-yarn add chord-keys
+yarn add chord-key
 # or
-pnpm add chord-keys
+pnpm add chord-key
 ```
 
 ## quick start
@@ -27,7 +27,7 @@ pnpm add chord-keys
 wrap your app with the provider and use the hooks:
 
 ```tsx
-import { KeyPressProvider, useKeyPress } from 'chord-keys';
+import { KeyPressProvider, useKeyPress } from 'chord-key';
 
 function App() {
   return (
@@ -55,7 +55,7 @@ function YourComponent() {
 handle single keys or key combinations.
 
 ```tsx
-import { useKeyPress } from 'chord-keys';
+import { useKeyPress } from 'chord-key';
 
 function Editor() {
   useKeyPress({
@@ -94,7 +94,7 @@ interface KeyPressConfig {
 handle key sequences like vim (press `g` then `h`).
 
 ```tsx
-import { useKeySequence } from 'chord-keys';
+import { useKeySequence } from 'chord-key';
 
 function Navigation() {
   useKeySequence({
@@ -133,7 +133,7 @@ interface KeySequenceConfig {
 get all registered shortcuts, grouped by category. useful for building custom shortcut displays.
 
 ```tsx
-import { useKeyboardShortcuts } from 'chord-keys';
+import { useKeyboardShortcuts } from 'chord-key';
 
 function CustomShortcutsList() {
   const { handlers, groupedHandlers } = useKeyboardShortcuts();
@@ -179,7 +179,7 @@ interface HandlerInfo {
 built-in modal to display all shortcuts. press `?` by default to open.
 
 ```tsx
-import { ShortcutsDialog } from 'chord-keys';
+import { ShortcutsDialog } from 'chord-key';
 
 function App() {
   return (
@@ -204,7 +204,7 @@ interface ShortcutsDialogProps {
 context provider for managing shortcuts globally. wrap your app with this to enable keyboard shortcuts.
 
 ```tsx
-import { KeyPressProvider } from 'chord-keys';
+import { KeyPressProvider } from 'chord-key';
 
 function App() {
   return (
@@ -300,7 +300,7 @@ function VimMode() {
 
 this is a turborepo monorepo containing:
 
-- **chord-keys** - the core library (vite + rolldown)
+- **chord-key** - the core library (vite + rolldown)
 - **website** - docs and demo (next.js 16)
 
 ### setup
@@ -326,7 +326,7 @@ npm run lint
 
 ```bash
 # work on library
-cd chord-keys
+cd chord-key
 npm run dev
 
 # work on website

@@ -5,7 +5,7 @@ import {
   ShortcutsDialog,
   useKeyPress,
   useKeySequence,
-} from "chord-keys";
+} from "chord-key";
 
 export default function Home() {
   const [count, setCount] = useState(0);
@@ -95,7 +95,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-8">
-      <h1 className="text-4xl font-bold mb-4">Chord Keys Demo</h1>
+      <h1 className="text-4xl font-bold mb-4">Chord-Key Demo</h1>
       <p className="text-lg mb-8">
         Advanced keyboard shortcuts library for React
       </p>

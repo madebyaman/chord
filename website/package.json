@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "chord-keys": "*",
+    "chord-key": "^0.1.0",
     "next": "^16.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
