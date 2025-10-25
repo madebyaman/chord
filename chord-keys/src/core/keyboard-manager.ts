@@ -129,8 +129,6 @@ export class KeyboardManager {
     const timeout = handler.timeout;
     const timePairs: number[] = buffer.map((b) => b.time);
     const timeoutPairs = timePairs.map((t) => t - buffer[0].time);
-    console.log("[KEYBOARD] time pairs", timePairs);
-    console.log("[KEYBOARD] timeout pairs", timeoutPairs);
     const maxTimeout = Math.max(...timeoutPairs);
     if (maxTimeout > timeout) return "none";
 
@@ -172,11 +170,7 @@ export class KeyboardManager {
 
       // Execute full matches
       if (fullMatches.length > 0) {
-        console.log("[KEYBOARD]: full match");
         if (partialMatches.length > 0) {
-          console.log(
-            "[KEYBOARD]: full and partial match - waiting for timeout",
-          );
           // Ambiguous case: "g" matches but "g h" might also match
           // We need to wait before executing to see if the sequence continues
           // Note: preventDefault cannot be applied here since we need to wait
@@ -188,19 +182,11 @@ export class KeyboardManager {
 
           // Set new timer (keep buffer for continuation)
           this.timer = setTimeout(() => {
-            console.log(
-              "[KEYBOARD]: timeout, clearing buffer and executing complete matches",
-            );
             this.clearBuffer();
-            console.log(
-              "[KEYBOARD]: executing",
-              fullMatches.map((h) => h.sequence.join(" ")),
-            );
             for (const handler of fullMatches) {
               handler.callback();
             }
           }, maxTimeout);
-          console.log("[KEYBOARD]: setting timeout of ", maxTimeout);
           return;
         }
 
@@ -210,10 +196,6 @@ export class KeyboardManager {
           event.preventDefault();
         }
 
-        console.log(
-          "[KEYBOARD]: executing",
-          fullMatches.map((h) => h.sequence.join(" ")),
-        );
         for (const handler of fullMatches) {
           handler.callback();
         }
@@ -226,8 +208,6 @@ export class KeyboardManager {
         // Use maximum timeout among all partial matches
         const maxTimeout = Math.max(...partialMatches.map((h) => h.timeout));
 
-        console.log("[KEYBOARD]: partial match, waiting", maxTimeout, "ms");
-
         // Clear existing timer and start new one
         if (this.timer) {
           clearTimeout(this.timer);
@@ -236,7 +216,6 @@ export class KeyboardManager {
 
         // Set new timer (keep buffer for continuation)
         this.timer = setTimeout(() => {
-          console.log("[KEYBOARD]: timeout, clearing buffer");
           this.clearBuffer();
         }, maxTimeout);
 
@@ -244,7 +223,6 @@ export class KeyboardManager {
       }
 
       // No matches - reset buffer
-      console.log("[KEYBOARD]: no match, clearing buffer");
       this.clearBuffer();
     };
   }
@@ -282,14 +260,6 @@ export class KeyboardManager {
 
     const listenerKey = eventType;
 
-    console.log(
-      "[REGISTER]: registering",
-      isKeyPress ? "keypress" : "sequence",
-      isKeyPress ? config.key : config.sequence.join(" "),
-      "→",
-      sequence.join(" "),
-    );
-
     const handler: KeyboardHandler = {
       id,
       sequence,
@@ -321,8 +291,6 @@ export class KeyboardManager {
   unregister(id: number): void {
     const handler = this.handlers.get(id);
     if (!handler) return;
-
-    console.log("[UNREGISTER]: unregistering", handler.sequence.join(" "));
 
     // Remove from listener group
     const group = this.listeners.get(handler.listenerKey);

@@ -33,7 +33,6 @@ export class ChordCore {
 
   /** Notify all subscribers of handler changes */
   private notify(): void {
-    console.log("notifying subscriber");
     this.subscribers.forEach((callback) => callback());
   }
 
