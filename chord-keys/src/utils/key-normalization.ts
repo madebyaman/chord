@@ -251,6 +251,33 @@ export function normalizeShortcut(
 }
 
 /**
+ * Characters that inherently require shift to type on a standard US keyboard
+ * These are the shifted versions of number and symbol keys
+ */
+const SHIFT_REQUIRED_CHARS = new Set([
+  "!", "@", "#", "$", "%", "^", "&", "*", "(", ")",
+  "_", "+", "{", "}", "|", ":", '"', "<", ">", "?", "~"
+]);
+
+/**
+ * Check if shift modifier should be ignored for this key
+ * We ignore shift when the key itself already represents a shifted character
+ */
+function shouldIgnoreShift(key: string): boolean {
+  // Ignore shift for uppercase letters (A-Z)
+  if (key.length === 1 && key >= 'A' && key <= 'Z') {
+    return true;
+  }
+
+  // Ignore shift for characters that require shift to type
+  if (SHIFT_REQUIRED_CHARS.has(key)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Normalize a keyboard event to a comparable string
  *
  * @param event - The keyboard event
@@ -262,13 +289,21 @@ export function normalizeShortcut(
  *
  * // User presses ctrl+shift+k on Windows
  * normalizeEvent({ key: 'k', ctrlKey: true, shiftKey: true }) // "ctrl+shift+k"
+ *
+ * // User presses ? (which requires shift on US keyboards)
+ * normalizeEvent({ key: '?', shiftKey: true }) // "?" (shift is ignored)
+ *
+ * // User presses ctrl+?
+ * normalizeEvent({ key: '?', shiftKey: true, ctrlKey: true }) // "ctrl+?" (shift is still ignored)
  */
 export function normalizeEvent(event: KeyboardEvent): NormalizedKeyString {
+  const normalizedKeyName = normalizeKeyName(event.key);
+
   const normalized: NormalizedKey = {
-    key: normalizeKeyName(event.key),
+    key: normalizedKeyName,
     meta: event.metaKey,
     ctrl: event.ctrlKey,
-    shift: event.shiftKey,
+    shift: event.shiftKey && !shouldIgnoreShift(event.key),
     alt: event.altKey,
   };
 

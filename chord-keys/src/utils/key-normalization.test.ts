@@ -116,7 +116,7 @@ describe("normalizeEvent", () => {
   it.each([
     [{ key: "k" }, "k"],
     [{ key: "1" }, "1"],
-    [{ key: "K", shiftKey: true }, "shift+k"],
+    [{ key: "K", shiftKey: true }, "k"], // Uppercase letter - shift is ignored
     [{ key: "k", metaKey: true }, "meta+k"],
     [{ key: "k", ctrlKey: true }, "ctrl+k"],
     [{ key: "k", shiftKey: true }, "shift+k"],
@@ -370,8 +370,8 @@ describe("edge cases", () => {
   });
 
   it("should handle only modifiers (no key)", () => {
-    expect(() => normalizeShortcut("mod+ctrl", "darwin")).toThrow(/no key specified/i);
     expect(() => normalizeShortcut("shift+alt", "darwin")).toThrow(/no key specified/i);
+    expect(() => normalizeShortcut("ctrl", "darwin")).toThrow(/no key specified/i);
   });
 
   it("should handle multiple non-modifier keys", () => {
@@ -401,7 +401,7 @@ describe("edge cases", () => {
 
   it("should handle option alias consistently", () => {
     expect(normalizeShortcut("option+k", "darwin")).toBe("alt+k");
-    expect(normalizeShortcut("opt+k", "darwin")).toBe("alt+k");
+    expect(normalizeShortcut("alt+k", "darwin")).toBe("alt+k");
   });
 
   it("should handle control alias consistently", () => {
@@ -455,5 +455,93 @@ describe("normalizeEvent - additional cases", () => {
       metaKey: true,
     } as KeyboardEvent;
     expect(normalizeEvent(event2)).toBe("meta+[");
+  });
+});
+
+describe("shift key normalization for shifted characters", () => {
+  it("should ignore shift for uppercase letters", () => {
+    const event = { key: "A", shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event)).toBe("a");
+  });
+
+  it("should ignore shift for ? (shifted symbol)", () => {
+    const event = { key: "?", shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event)).toBe("?");
+  });
+
+  it.each([
+    ["!", "!"],
+    ["@", "@"],
+    ["#", "#"],
+    ["$", "$"],
+    ["%", "%"],
+    ["^", "^"],
+    ["&", "&"],
+    ["*", "*"],
+    ["(", "("],
+    [")", ")"],
+    ["_", "_"],
+    ["+", "+"],
+    ["{", "{"],
+    ["}", "}"],
+    ["|", "|"],
+    [":", ":"],
+    ['"', '"'],
+    ["<", "<"],
+    [">", ">"],
+    ["?", "?"],
+    ["~", "~"],
+  ])("should ignore shift for shifted symbol %s", (key, expected) => {
+    const event = { key, shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event)).toBe(expected);
+  });
+
+  it("should keep shift for lowercase letters", () => {
+    const event = { key: "a", shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event)).toBe("shift+a");
+  });
+
+  it("should keep shift for unshifted symbols", () => {
+    // These are symbols that don't require shift, so shift+them should be recognized
+    const event1 = { key: "-", shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event1)).toBe("shift+-");
+
+    const event2 = { key: "=", shiftKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event2)).toBe("shift+=");
+  });
+
+  it("should ignore shift for ? even with other modifiers", () => {
+    const event1 = { key: "?", shiftKey: true, ctrlKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event1)).toBe("ctrl+?");
+
+    const event2 = { key: "?", shiftKey: true, metaKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event2)).toBe("meta+?");
+
+    const event3 = { key: "?", shiftKey: true, ctrlKey: true, altKey: true } as KeyboardEvent;
+    expect(normalizeEvent(event3)).toBe("ctrl+alt+?");
+  });
+
+  it("should handle real-world scenario: registering ? and pressing it", () => {
+    // User registers the shortcut "?"
+    const registered = normalizeShortcut("?", "darwin");
+
+    // User presses Shift+/ (which produces ?)
+    const pressed = normalizeEvent({ key: "?", shiftKey: true } as KeyboardEvent);
+
+    // They should match
+    expect(registered).toBe(pressed);
+    expect(registered).toBe("?");
+  });
+
+  it("should handle real-world scenario: registering ctrl+! and pressing it", () => {
+    // User registers the shortcut "ctrl+!"
+    const registered = normalizeShortcut("ctrl+!", "darwin");
+
+    // User presses Ctrl+Shift+1 (which produces !)
+    const pressed = normalizeEvent({ key: "!", shiftKey: true, ctrlKey: true } as KeyboardEvent);
+
+    // They should match
+    expect(registered).toBe(pressed);
+    expect(registered).toBe("ctrl+!");
   });
 });
