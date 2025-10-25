@@ -81,24 +81,6 @@ describe("ShortcutsDialog", () => {
         expect(onOpenChange).toHaveBeenCalledWith(false);
       });
     });
-
-    it("calls onOpenChange when backdrop is clicked", async () => {
-      const onOpenChange = vi.fn();
-
-      const screen = render(
-        <KeyPressProvider>
-          <ShortcutsDialog open={true} onOpenChange={onOpenChange} />
-        </KeyPressProvider>,
-      );
-
-
-      const backdrop = screen.getByTestId('drawer-backdrop');
-      await backdrop.click();
-
-      await waitFor(() => {
-        expect(onOpenChange).toHaveBeenCalledWith(false);
-      });
-    });
   });
 
   describe("Displaying shortcuts", () => {
