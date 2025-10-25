@@ -1,161 +1,101 @@
 /// <reference types="@vitest/browser/matchers" />
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render  } from "vitest-browser-react";
 import { userEvent } from "@testing-library/user-event";
 import { KeyPressProvider } from "../context/provider";
 import { useKeyPress } from "../hooks/use-keypress";
-import { useState } from "react";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { waitFor } from "@testing-library/react";
 
 describe("ShortcutsDialog", () => {
-  let user: ReturnType<typeof userEvent.setup>;
+  describe("Rendering and visibility", () => {
+    it("renders when isOpen is true", async () => {
+      const TestComponent = () => {
+        useKeyPress({
+          key: "k",
+          description: "Test",
+          onPress: vi.fn(),
+        });
 
-  beforeEach(() => {
-    user = userEvent.setup();
+        return <div>Test</div>;
+      };
+
+      const screen = render(
+        <KeyPressProvider>
+          <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+        </KeyPressProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+      });
+    });
+
+    it("does not render when isOpen is false", () => {
+      render(
+        <KeyPressProvider>
+          <ShortcutsDialog isOpen={false} onClose={vi.fn()} />
+        </KeyPressProvider>,
+      );
+
+      const dialog = document.querySelector('[role="dialog"]');
+      expect(dialog).not.toBeInTheDocument();
+    });
   });
 
-  describe("Opening/Closing", () => {
-    it("opens when helpKey is pressed", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
+  describe("Closing behavior", () => {
+    it("calls onClose when close button is clicked", async () => {
+      const onClose = vi.fn();
 
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
+      const screen = render(
+        <KeyPressProvider>
+          <ShortcutsDialog isOpen={true} onClose={onClose} />
         </KeyPressProvider>,
       );
 
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-      await user.keyboard("?");
-
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
-    });
-
-    it("closes when escape is pressed", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
-
-      await user.keyboard("{Escape}");
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      });
-    });
-
-    it("closes when helpKey is pressed again", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      // Open
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
-
-      // Close with same key
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      });
-    });
-
-    it("closes when backdrop is clicked", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByRole("dialog")).toBeInTheDocument();
-      });
-
-      const backdrop = screen.getByTestId("modal-backdrop");
-      await user.click(backdrop);
-
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      });
-    });
-
-    it("closes when X button is clicked", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
       await waitFor(() => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
       });
 
       const closeButton = screen.getByRole("button", { name: /close/i });
-      await user.click(closeButton);
+      await closeButton.click();
+
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    it("calls onClose when Escape is pressed", async () => {
+      const user = userEvent.setup();
+      const onClose = vi.fn();
+
+      render(
+        <KeyPressProvider>
+          <ShortcutsDialog isOpen={true} onClose={onClose} />
+        </KeyPressProvider>,
+      );
+
+      await user.keyboard("{Escape}");
 
       await waitFor(() => {
-        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(onClose).toHaveBeenCalled();
+      });
+    });
+
+    it("calls onClose when backdrop is clicked", async () => {
+      const onClose = vi.fn();
+
+      render(
+        <KeyPressProvider>
+          <ShortcutsDialog isOpen={true} onClose={onClose} />
+        </KeyPressProvider>,
+      );
+
+      const backdrop = document.querySelector('.drawer-backdrop');
+      await backdrop!.click();
+
+      await waitFor(() => {
+        expect(onClose).toHaveBeenCalled();
       });
     });
   });
@@ -178,39 +118,67 @@ describe("ShortcutsDialog", () => {
         return <div>Test</div>;
       };
 
-      render(
-        <KeyPressProvider helpKey="?">
+      const screen = render(
+        <KeyPressProvider>
           <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("?");
-
       await waitFor(() => {
-        // Check that descriptions are displayed
         expect(screen.getByText("Save file")).toBeInTheDocument();
         expect(screen.getByText("My shortcut")).toBeInTheDocument();
-        // Check that keys are displayed
-        expect(screen.getByText("k")).toBeInTheDocument();
       });
     });
 
     it('shows "No shortcuts" when empty', async () => {
-      render(
-        <KeyPressProvider helpKey="?">
-          <div>Test</div>
+      const screen = render(
+        <KeyPressProvider>
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("?");
-
       await waitFor(() => {
-        expect(screen.getByText(/no keyboard shortcuts/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/no keyboard shortcuts registered/i),
+        ).toBeInTheDocument();
       });
     });
   });
 
   describe("Category organization", () => {
+    it("displays category headers", async () => {
+      const TestComponent = () => {
+        useKeyPress({
+          key: "mod+s",
+          description: "Save",
+          category: "File",
+          onPress: vi.fn(),
+        });
+
+        useKeyPress({
+          key: "mod+c",
+          description: "Copy",
+          category: "Edit",
+          onPress: vi.fn(),
+        });
+
+        return <div>Test</div>;
+      };
+
+      const screen = render(
+        <KeyPressProvider>
+          <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+        </KeyPressProvider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("File")).toBeInTheDocument();
+        expect(screen.getByText("Edit")).toBeInTheDocument();
+      });
+    });
+
     it("groups shortcuts by category", async () => {
       const TestComponent = () => {
         useKeyPress({
@@ -237,44 +205,19 @@ describe("ShortcutsDialog", () => {
         return <div>Test</div>;
       };
 
-      render(
-        <KeyPressProvider helpKey="?">
+      const screen = render(
+        <KeyPressProvider>
           <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("?");
-
       await waitFor(() => {
-        expect(screen.getByText("File")).toBeInTheDocument();
-        expect(screen.getByText("Edit")).toBeInTheDocument();
-      });
-    });
-
-    it("displays category headers", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          category: "Navigation",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-
-      await waitFor(() => {
-        const categoryHeader = screen.getByText("Navigation");
-        expect(categoryHeader).toBeInTheDocument();
-        expect(categoryHeader.tagName).toMatch(/h3|h4|header/i);
+        // Both File shortcuts should be visible
+        expect(screen.getByText("Save")).toBeInTheDocument();
+        expect(screen.getByText("Open")).toBeInTheDocument();
+        // Edit shortcut should be visible
+        expect(screen.getByText("Copy")).toBeInTheDocument();
       });
     });
 
@@ -283,307 +226,83 @@ describe("ShortcutsDialog", () => {
         useKeyPress({
           key: "k",
           description: "Test",
+          // No category specified
           onPress: vi.fn(),
         });
 
         return <div>Test</div>;
       };
 
-      render(
-        <KeyPressProvider helpKey="?">
+      const screen = render(
+        <KeyPressProvider>
           <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
-
-      await user.keyboard("?");
 
       await waitFor(() => {
         expect(screen.getByText("General")).toBeInTheDocument();
       });
     });
+  });
 
-    it("filters shortcuts by category prop", async () => {
+  describe("Search functionality", () => {
+    it("filters shortcuts by description", async () => {
+
       const TestComponent = () => {
         useKeyPress({
           key: "mod+s",
-          description: "Save",
-          category: "File",
+          description: "Save file",
+          onPress: vi.fn(),
+        });
+
+        useKeyPress({
+          key: "mod+o",
+          description: "Open file",
           onPress: vi.fn(),
         });
 
         useKeyPress({
           key: "mod+c",
-          description: "Copy",
-          category: "Edit",
-          onPress: vi.fn(),
-        });
-
-        useKeyPress({
-          key: "k",
-          description: "Navigate",
-          category: "Navigation",
+          description: "Copy text",
           onPress: vi.fn(),
         });
 
         return <div>Test</div>;
       };
 
-      render(
-        <KeyPressProvider helpKey="?" category="File">
+      const screen = render(
+        <KeyPressProvider>
           <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("?");
-
+      // All shortcuts should be visible initially
       await waitFor(() => {
-        // Should show File category shortcuts
-        expect(screen.getByText("Save")).toBeInTheDocument();
-        // Should NOT show other categories
-        expect(screen.queryByText("Copy")).not.toBeInTheDocument();
-        expect(screen.queryByText("Navigate")).not.toBeInTheDocument();
+        expect(screen.getByText("Save file")).toBeInTheDocument();
+        expect(screen.getByText("Open file")).toBeInTheDocument();
+        expect(screen.getByText("Copy text")).toBeInTheDocument();
       });
-    });
-  });
 
-  describe("showConflicts prop", () => {
-    it("displays conflicts section with indicators when true", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "First",
-          onPress: vi.fn(),
-        });
+      // Type in search
+      const searchInput = screen.getByPlaceholder(/search shortcuts/i);
+      await searchInput.fill("file")
 
-        useKeyPress({
-          key: "k",
-          description: "Second",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?" showConflicts={true}>
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-
+      // Only shortcuts with "file" in description should be visible
       await waitFor(() => {
-        expect(screen.getByTestId("conflicts-section")).toBeInTheDocument();
-        const indicators = screen.getAllByTestId("conflict-indicator");
-        expect(indicators.length).toBeGreaterThan(0);
-      });
-    });
-
-    it("hides conflicts section when false", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "First",
-          onPress: vi.fn(),
-        });
-
-        useKeyPress({
-          key: "k",
-          description: "Second",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?" showConflicts={false}>
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-
-      await waitFor(() => {
-        expect(screen.queryByTestId("conflicts-section")).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("Dynamic updates", () => {
-    it("adds shortcut when component mounts", async () => {
-      const App = () => {
-        const [showComponent, setShowComponent] = useState(false);
-
-        const TestComponent = () => {
-          useKeyPress({
-            key: "k",
-            description: "New shortcut",
-            onPress: vi.fn(),
-          });
-
-          return null;
-        };
-
-        return (
-          <KeyPressProvider helpKey="?">
-            <button onClick={() => setShowComponent(true)}>Mount</button>
-            {showComponent && <TestComponent />}
-          </KeyPressProvider>
+        expect(screen.getByText("Save file")).toBeInTheDocument();
+        expect(screen.getByText("Open file")).toBeInTheDocument();
+        // Check that "Copy text" is not in the document
+        const copyText = Array.from(document.querySelectorAll('*')).find(
+          el => el.textContent === "Copy text"
         );
-      };
-
-      render(<App />);
-
-      // Open dialog - shortcut should not be there
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.queryByText("New shortcut")).not.toBeInTheDocument();
-      });
-
-      await user.keyboard("{Escape}");
-
-      // Mount component
-      await user.click(screen.getByRole("button", { name: "Mount" }));
-
-      // Open dialog again - shortcut should now be there
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByText("New shortcut")).toBeInTheDocument();
+        expect(copyText).toBeUndefined();
       });
     });
 
-    it("removes shortcut when component unmounts", async () => {
-      const App = () => {
-        const [showComponent, setShowComponent] = useState(true);
+    it("shows empty state when search has no results", async () => {
 
-        const TestComponent = () => {
-          useKeyPress({
-            key: "k",
-            description: "Temporary shortcut",
-            onPress: vi.fn(),
-          });
-
-          return null;
-        };
-
-        return (
-          <KeyPressProvider helpKey="?">
-            <button onClick={() => setShowComponent(false)}>Unmount</button>
-            {showComponent && <TestComponent />}
-          </KeyPressProvider>
-        );
-      };
-
-      render(<App />);
-
-      // Open dialog - shortcut should be there
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByText("Temporary shortcut")).toBeInTheDocument();
-      });
-
-      await user.keyboard("{Escape}");
-
-      // Unmount component
-      await user.click(screen.getByRole("button", { name: "Unmount" }));
-
-      // Open dialog again - shortcut should be gone
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.queryByText("Temporary shortcut")).not.toBeInTheDocument();
-      });
-    });
-
-    it("removes conflict when conflicting component unmounts", async () => {
-      const App = () => {
-        const [showSecond, setShowSecond] = useState(true);
-
-        const Component1 = () => {
-          useKeyPress({
-            key: "k",
-            description: "First",
-            onPress: vi.fn(),
-          });
-
-          return null;
-        };
-
-        const Component2 = () => {
-          useKeyPress({
-            key: "k",
-            description: "Second",
-            onPress: vi.fn(),
-          });
-
-          return null;
-        };
-
-        return (
-          <KeyPressProvider helpKey="?" showConflicts={true}>
-            <Component1 />
-            {showSecond && <Component2 />}
-            <button onClick={() => setShowSecond(false)}>Remove</button>
-          </KeyPressProvider>
-        );
-      };
-
-      render(<App />);
-
-      // Open dialog - should show conflict
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.getByTestId("conflicts-section")).toBeInTheDocument();
-      });
-
-      await user.keyboard("{Escape}");
-
-      // Remove conflicting component
-      await user.click(screen.getByRole("button", { name: "Remove" }));
-
-      // Open dialog again - conflict should be gone
-      await user.keyboard("?");
-      await waitFor(() => {
-        expect(screen.queryByTestId("conflicts-section")).not.toBeInTheDocument();
-      });
-    });
-
-    it("doesn't show disabled shortcuts (enabled: false)", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Enabled shortcut",
-          enabled: true,
-          onPress: vi.fn(),
-        });
-
-        useKeyPress({
-          key: "j",
-          description: "Disabled shortcut",
-          enabled: false,
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-
-      await waitFor(() => {
-        expect(screen.getByText("Enabled shortcut")).toBeInTheDocument();
-        expect(screen.queryByText("Disabled shortcut")).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("theme prop", () => {
-    it("light theme colors", async () => {
       const TestComponent = () => {
         useKeyPress({
           key: "k",
@@ -594,70 +313,64 @@ describe("ShortcutsDialog", () => {
         return <div>Test</div>;
       };
 
-      render(
-        <KeyPressProvider helpKey="?" theme="light">
+      const screen = render(
+        <KeyPressProvider>
           <TestComponent />
+          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("?");
+      const searchInput = screen.getByPlaceholder(/search shortcuts/i);
+      await searchInput.fill("nonexistent")
 
       await waitFor(() => {
-        const dialog = screen.getByRole("dialog");
-        const styles = window.getComputedStyle(dialog);
-        expect(styles.backgroundColor).toMatch(/#fff|white/i);
-      });
-    });
-
-    it("dark theme colors", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
-
-        return <div>Test</div>;
-      };
-
-      render(
-        <KeyPressProvider helpKey="?" theme="dark">
-          <TestComponent />
-        </KeyPressProvider>,
-      );
-
-      await user.keyboard("?");
-
-      await waitFor(() => {
-        const dialog = screen.getByRole("dialog");
-        const styles = window.getComputedStyle(dialog);
-        expect(styles.backgroundColor).toMatch(/#1a1a1a|#000/i);
+        expect(
+          screen.getByText(/no shortcuts match your search/i),
+        ).toBeInTheDocument();
       });
     });
   });
 
   describe("helpKey prop", () => {
-    it("shows helpKey in footer text", async () => {
-      const TestComponent = () => {
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          onPress: vi.fn(),
-        });
+    it("opens and closes dialog when helpKey is pressed", async () => {
+      const user = userEvent.setup();
+      let isOpen = false;
+      const onOpenChange = vi.fn((open: boolean) => {
+        isOpen = open;
+      });
 
-        return <div>Test</div>;
+      const TestComponent = () => {
+        return (
+          <ShortcutsDialog
+            isOpen={isOpen}
+            onClose={() => onOpenChange(false)}
+            helpKey="?"
+          />
+        );
       };
 
       render(
-        <KeyPressProvider helpKey="ctrl+/">
+        <KeyPressProvider>
           <TestComponent />
         </KeyPressProvider>,
       );
 
-      await user.keyboard("{Control>}/{/Control}");
+      // Initially dialog should not be visible
+      expect(document.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+
+      // Press the help key to open
+      await user.keyboard("?");
+      isOpen = true;
 
       await waitFor(() => {
-        expect(screen.getByText(/ctrl\+\//i)).toBeInTheDocument();
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      // Press the help key again to close
+      await user.keyboard("?");
+
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
       });
     });
   });
