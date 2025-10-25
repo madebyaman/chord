@@ -3,30 +3,38 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Advanced keyboard shortcuts library for React with built-in conflict detection and discoverable shortcuts",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/chord-keys.cjs",
+  "module": "./dist/chord-keys.js",
+  "types": "./dist/chord-keys.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": {
+        "development": "./src/index.ts",
+        "default": "./dist/chord-keys.d.ts"
+      },
       "development": "./src/index.ts",
-      "default": "./src/index.ts"
-    },
-    "./style.css": "./src/index.css",
-    "./dist": {
       "import": "./dist/chord-keys.js",
-      "require": "./dist/chord-keys.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/chord-keys.cjs",
+      "default": "./dist/chord-keys.js"
+    },
+    "./style.css": {
+      "development": "./src/index.css",
+      "default": "./dist/chord-keys.css"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --p tsconfig.build.json && vite build",
     "lint": "eslint .",
-    "test": "vitest"
+    "test": "vitest",
+
+    "prepublishOnly": "cp ../README.md . && pnpm build",
+        "postpublish": "rm README.md",
+        "build": "tsup",
+        "dev": "tsup --watch"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.4",
@@ -69,6 +77,15 @@
     "keybindings",
     "accessibility"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "madebyaman",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/madebyaman/chord.git",
+    "directory": "chord-keys"
+  },
+  "bugs": {
+    "url": "https://github.com/madebyaman/chord/issues"
+  },
+  "homepage": "https://github.com/madebyaman/chord#readme"
 }
