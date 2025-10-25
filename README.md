@@ -1,26 +1,22 @@
-# Chord - Advanced Keyboard Shortcuts for React
+# chord
 
-A powerful and developer-friendly React library for managing keyboard shortcuts with built-in conflict detection and a discoverable shortcut interface.
+[![npm version](https://img.shields.io/npm/v/chord-keys.svg)](https://www.npmjs.com/package/chord-keys)
+[![license](https://img.shields.io/npm/l/chord-keys.svg)](https://github.com/madebyaman/chord/blob/main/LICENSE)
+[![coverage](https://img.shields.io/codecov/c/github/madebyaman/chord)](https://codecov.io/gh/madebyaman/chord)
 
-## Monorepo Structure
+a keyboard shortcuts library for react with built-in conflict detection and discoverable shortcuts.
 
-This is a Turborepo monorepo containing:
+## what is chord?
 
-- **chord-keys** - The core keyboard shortcuts library (Vite + Tailwind CSS v4)
-- **website** - Documentation and demo website (Next.js 16 + Tailwind CSS v4)
+chord makes keyboard shortcuts in react apps easy to manage. unlike typical key press hooks, chord provides:
 
-## What Makes Chord Different?
+- **discoverable shortcuts** - press `?` to see all available shortcuts
+- **conflict detection** - warns you when multiple handlers use the same key
+- **centralized management** - single source of truth for all shortcuts
+- **cross-platform** - handles mac (cmd), windows (ctrl), and linux keyboards
+- **typescript support** - fully typed api
 
-Unlike typical React key press hooks, Chord provides:
-
-1. **Built-in Shortcut Discovery** - Press `?` (or any custom key) to view all available shortcuts in your application
-2. **Conflict Detection** - Automatically detects and highlights conflicting key bindings
-3. **Superior UX** - Visual feedback for key conflicts, making debugging and development easier
-4. **Centralized Management** - Single source of truth for all keyboard shortcuts in your app
-
-## Getting Started
-
-### Installation
+## installation
 
 ```bash
 npm install chord-keys
@@ -30,10 +26,12 @@ yarn add chord-keys
 pnpm add chord-keys
 ```
 
-### Quick Start
+## quick start
+
+wrap your app with the provider and use the hooks:
 
 ```tsx
-import { useKeyPress, KeyPressProvider } from 'chord-keys';
+import { KeyPressProvider, useKeyPress } from 'chord-keys';
 
 function App() {
   return (
@@ -44,74 +42,314 @@ function App() {
 }
 
 function YourComponent() {
-  // Basic usage
   useKeyPress({
     key: 'cmd+k',
-    description: 'Open command palette',
-    onPress: () => console.log('Command palette opened'),
+    description: 'open command palette',
+    onPress: () => console.log('opened'),
   });
 
-  return <div>Your content</div>;
+  return <div>your content</div>;
 }
 ```
 
-## Development
+## api
 
-This monorepo uses [Turborepo](https://turbo.build/repo) and npm workspaces.
+### useKeyPress
 
-### Setup
+handle single keys or key combinations.
+
+```tsx
+import { useKeyPress } from 'chord-keys';
+
+function Editor() {
+  useKeyPress({
+    key: 'cmd+s',
+    description: 'save document',
+    category: 'editor',
+    onPress: () => saveDocument(),
+  });
+
+  useKeyPress({
+    key: 'cmd+shift+p',
+    description: 'open command palette',
+    onPress: () => openPalette(),
+  });
+
+  return <div>...</div>;
+}
+```
+
+**options:**
+
+```tsx
+interface KeyPressConfig {
+  key: string;                    // e.g. "cmd+k", "ctrl+shift+s"
+  description: string;            // shown in help modal
+  onPress: () => void;            // callback when pressed
+  category?: string;              // group in help modal
+  enabled?: boolean;              // conditionally enable/disable
+  preventDefault?: boolean;       // prevent browser defaults
+  eventType?: 'keydown' | 'keyup' | 'keypress';
+}
+```
+
+### useKeySequence
+
+handle key sequences like vim (press `g` then `h`).
+
+```tsx
+import { useKeySequence } from 'chord-keys';
+
+function Navigation() {
+  useKeySequence({
+    sequence: ['g', 'h'],
+    description: 'go to home',
+    category: 'navigation',
+    onComplete: () => navigate('/'),
+  });
+
+  useKeySequence({
+    sequence: ['g', 'i'],
+    description: 'go to inbox',
+    onComplete: () => navigate('/inbox'),
+  });
+
+  return <div>...</div>;
+}
+```
+
+**options:**
+
+```tsx
+interface KeySequenceConfig {
+  sequence: string[];             // e.g. ["g", "h"]
+  description: string;            // shown in help modal
+  onComplete: () => void;         // callback when sequence completes
+  category?: string;              // group in help modal
+  enabled?: boolean;              // conditionally enable/disable
+  timeout?: number;               // ms between keys (default: 1000)
+  eventType?: 'keydown' | 'keyup' | 'keypress';
+}
+```
+
+### useKeyboardShortcuts
+
+get all registered shortcuts, grouped by category. useful for building custom shortcut displays.
+
+```tsx
+import { useKeyboardShortcuts } from 'chord-keys';
+
+function CustomShortcutsList() {
+  const { handlers, groupedHandlers } = useKeyboardShortcuts();
+
+  return (
+    <div>
+      {groupedHandlers.map(([category, shortcuts]) => (
+        <div key={category}>
+          <h3>{category}</h3>
+          <ul>
+            {shortcuts.map((shortcut, i) => (
+              <li key={i}>
+                <kbd>{shortcut.keySequence.join(' ')}</kbd>
+                <span>{shortcut.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**returns:**
+
+```tsx
+{
+  handlers: HandlerInfo[];           // all registered shortcuts
+  groupedHandlers: [string, HandlerInfo[]][];  // grouped by category
+}
+
+interface HandlerInfo {
+  keySequence: string[];    // e.g. ["cmd+s"] or ["g", "h"]
+  description: string;
+  category: string;
+  component: string;
+}
+```
+
+### ShortcutsDialog
+
+built-in modal to display all shortcuts. press `?` by default to open.
+
+```tsx
+import { ShortcutsDialog } from 'chord-keys';
+
+function App() {
+  return (
+    <KeyPressProvider>
+      <YourApp />
+      <ShortcutsDialog helpKey="?" />
+    </KeyPressProvider>
+  );
+}
+```
+
+**options:**
+
+```tsx
+interface ShortcutsDialogProps {
+  helpKey?: string;  // key to open modal (default: "?")
+}
+```
+
+### KeyPressProvider
+
+context provider for managing shortcuts globally. wrap your app with this to enable keyboard shortcuts.
+
+```tsx
+import { KeyPressProvider } from 'chord-keys';
+
+function App() {
+  return (
+    <KeyPressProvider>
+      <YourApp />
+    </KeyPressProvider>
+  );
+}
+```
+
+## examples
+
+### organizing with categories
+
+categories group shortcuts in the help modal:
+
+```tsx
+function App() {
+  useKeyPress({
+    key: 'cmd+n',
+    description: 'new file',
+    category: 'file',
+    onPress: () => createFile(),
+  });
+
+  useKeyPress({
+    key: 'cmd+o',
+    description: 'open file',
+    category: 'file',
+    onPress: () => openFile(),
+  });
+
+  useKeyPress({
+    key: 'cmd+f',
+    description: 'find',
+    category: 'search',
+    onPress: () => openSearch(),
+  });
+
+  return <div>...</div>;
+}
+```
+
+### conditional shortcuts
+
+enable/disable shortcuts based on state:
+
+```tsx
+function Editor() {
+  const [isEditing, setIsEditing] = useState(false);
+
+  useKeyPress({
+    key: 'cmd+s',
+    description: 'save',
+    enabled: isEditing,
+    onPress: () => save(),
+  });
+
+  useKeyPress({
+    key: 'escape',
+    description: 'cancel editing',
+    enabled: isEditing,
+    onPress: () => setIsEditing(false),
+  });
+
+  return <div>...</div>;
+}
+```
+
+### complex sequences
+
+```tsx
+function VimMode() {
+  useKeySequence({
+    sequence: ['g', 'g'],
+    description: 'go to top',
+    category: 'navigation',
+    onComplete: () => scrollToTop(),
+  });
+
+  useKeySequence({
+    sequence: ['shift+g'],
+    description: 'go to bottom',
+    category: 'navigation',
+    onComplete: () => scrollToBottom(),
+  });
+
+  return <div>...</div>;
+}
+```
+
+## development
+
+this is a turborepo monorepo containing:
+
+- **chord-keys** - the core library (vite + rolldown)
+- **website** - docs and demo (next.js 16)
+
+### setup
 
 ```bash
-# Install dependencies
+# install dependencies
 npm install
 
-# Run development servers for all packages
+# run all dev servers
 npm run dev
 
-# Build all packages
+# build all packages
 npm run build
 
-# Run tests
+# run tests
 npm run test
 
-# Lint all packages
+# lint
 npm run lint
 ```
 
-### Working with Individual Packages
+### working with packages
 
 ```bash
-# Work on the library
+# work on library
 cd chord-keys
 npm run dev
 
-# Work on the website
+# work on website
 cd website
 npm run dev
 ```
 
-## Features
+## roadmap
 
-- **Shortcut Registry**: Automatically maintains a registry of all registered shortcuts
-- **Conflict Detection**: Warns developers when multiple handlers are registered for the same key combination
-- **Help Modal**: Built-in UI to display all available shortcuts (triggered by `?` by default)
-- **TypeScript Support**: Full TypeScript support with type-safe key definitions
-- **Customizable**: Configure help key and UI theme
-- **Performance**: Efficient event handling with automatic cleanup
-- **Conditional Activation**: Enable/disable shortcuts based on application state
+- **compile-time conflict detection** - typescript plugin to catch conflicting shortcuts at build time
+- **category autocomplete** - typescript autocomplete for category names to keep them consistent
+- **community contributions welcome** - open to suggestions and improvements
 
-## API Documentation
+## contributing
 
-See the [website](./website) for full API documentation and examples.
+contributions are welcome! please open an issue or submit a pull request at [github.com/madebyaman/chord](https://github.com/madebyaman/chord).
 
-## Contributing
+## license
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+MIT - see [LICENSE](LICENSE) for details.
 
-## License
-
-MIT
-
-## Acknowledgments
-
-Built with React, TypeScript, Vite, Next.js, and Tailwind CSS. Inspired by the need for better keyboard shortcut management in complex applications.
+**author:** madebyaman
