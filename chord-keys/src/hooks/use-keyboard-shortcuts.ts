@@ -1,8 +1,14 @@
+import { useEffect, useState } from "react";
 import { useKeyPressContext } from "../context/provider";
 
 export const useKeyboardShortcuts = () => {
   const { instance } = useKeyPressContext();
-  const handlers = instance.handlers;
+  const [handlers, setHandlers] = useState(() => instance.handlers);
+
+  useEffect(() => {
+    const unsub = instance.subscribe(() => setHandlers(instance.handlers))
+    return unsub
+  } ,[instance])
 
   // Group handlers by category
   const groups = new Map<string, typeof handlers>();
