@@ -11,40 +11,19 @@ import { normalizeShortcut, normalizeEvent } from "../utils/key-normalization";
  * Handles both single keys and sequences uniformly
  */
 interface KeyboardHandler {
-  /** Unique identifier for this handler */
   id: number;
 
   /** Normalized sequence of keys (array of 1+ keys) */
   sequence: string[];
-
-  /** Human-readable description */
   description: string;
-
-  /** Category for grouping */
   category: string;
-
-  /** Handler function to execute when sequence completes */
   callback: () => void;
-
-  /** Whether the handler is currently enabled */
   enabled: boolean;
-
-  /** Timeout in milliseconds before sequence resets */
   timeout: number;
-
-  /** Component that registered this handler */
   component: string;
-
-  /** Timestamp when registered */
   registeredAt: number;
-
-  /** Event type this handler listens for */
   eventType: "keydown" | "keyup" | "keypress";
-
-  /** Listener key for quick group lookup */
   listenerKey: string;
-
-  /** Whether to prevent default browser behavior (only for single-key, unambiguous cases) */
   preventDefault: boolean;
 }
 
@@ -89,7 +68,6 @@ export class KeyboardManager {
     return group;
   }
 
-  /** Clear buffer and timer */
   private clearBuffer(): void {
     this.buffer = [];
     if (this.timer) {
@@ -98,7 +76,6 @@ export class KeyboardManager {
     }
   }
 
-  /** Get enabled handlers for a specific listener group */
   private getEnabledHandlers(listenerKey: string): KeyboardHandler[] {
     const group = this.listeners.get(listenerKey);
     if (!group) return [];
@@ -113,7 +90,6 @@ export class KeyboardManager {
     return handlers;
   }
 
-  /** Check if buffer matches a sequence */
   private matchesSequence(
     buffer: typeof this.buffer,
     handler: KeyboardHandler,
@@ -135,7 +111,6 @@ export class KeyboardManager {
     return buffer.length === sequence.length ? "full" : "partial";
   }
 
-  /** Create bound handler for event listener */
   private createListenerHandler(
     eventType: "keydown" | "keyup" | "keypress",
   ): (e: Event) => void {
@@ -147,7 +122,6 @@ export class KeyboardManager {
 
       this.buffer.push({ key: normalizedKey, time: Date.now() });
 
-      // Get all enabled handlers
       const enabledHandlers = this.getEnabledHandlers(listenerKey);
 
       if (enabledHandlers.length === 0) {
@@ -155,7 +129,6 @@ export class KeyboardManager {
         return;
       }
 
-      // Check for matches
       const fullMatches: KeyboardHandler[] = [];
       const partialMatches: KeyboardHandler[] = [];
 

@@ -33,7 +33,7 @@ export interface KeyPressConfig extends BaseKeyConfig {
   /** Event type (default: keydown) */
   eventType?: "keydown" | "keyup" | "keypress";
 
-  /** Whether to prevent default browser behavior (only works when unambiguous) */
+  /** Whether to prevent default browser behavior (only works when `key` doesn't match a key sequence key.) */
   preventDefault?: boolean;
 }
 
@@ -111,40 +111,6 @@ export type NormalizedKeyString = string;
 export interface KeyPressProviderProps {
   /** Children components */
   children: React.ReactNode;
-
-  /** Conflict resolution strategy (default: "warn") */
-  conflictResolution?:
-    | "warn"
-    | "firstWins"
-    | "lastWins"
-    | "scopePriority"
-    | "error";
-}
-
-/**
- * Context value provided by KeyPressProvider
- */
-export interface KeyPressContextValue {
-  /** Register a new shortcut handler */
-  register: (config: KeyPressConfig) => string;
-
-  /** Unregister a shortcut handler by ID */
-  unregister: (id: string) => void;
-
-  /** Get all registered handlers */
-  getHandlers: () => HandlerInfo[];
-
-  /** Get all conflicts */
-  getConflicts: () => ShortcutConflict[];
-
-  /** Whether help modal is open */
-  helpModalOpen: boolean;
-
-  /** Open the help modal */
-  openHelpModal: () => void;
-
-  /** Close the help modal */
-  closeHelpModal: () => void;
 }
 
 export interface ShortcutsDialogProps {

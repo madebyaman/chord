@@ -8,21 +8,14 @@ import { DEFAULTS } from "../utils/constants";
  * Routes all keyboard shortcuts to the unified KeyboardManager
  */
 export class ChordCore {
-  /** Unified ID counter for all handler types */
   private idCounter = 0;
-
-  /** Unified keyboard manager for both key presses and sequences */
   private keyboardManager = new KeyboardManager();
-
-  /** Subscribers that get notified when handlers change */
   private subscribers = new Set<() => void>();
 
-  /** Generate unique ID for handlers */
   private generateId(): number {
     return ++this.idCounter;
   }
 
-  /** Subscribe to handler changes. Returns unsubscribe function */
   subscribe(callback: () => void): () => void {
     this.subscribers.add(callback);
     this.notify(); // Notify immediately to tell latest updates
@@ -31,12 +24,10 @@ export class ChordCore {
     };
   }
 
-  /** Notify all subscribers of handler changes */
   private notify(): void {
     this.subscribers.forEach((callback) => callback());
   }
 
-  /** Get handlers for a given sequence (for conflict detection) */
   private getHandlersBySequence(sequence: string[]): HandlerInfo[] {
     return Array.from(this.keyboardManager.handlers.values())
       .map((handler) => ({
@@ -181,9 +172,6 @@ export class ChordCore {
     return conflicts;
   }
 
-  /**
-   * Warn about conflicts in development mode
-   */
   private warnConflict(keyString: string, handlers: HandlerInfo[]): void {
     console.warn(
       `[Chord] Shortcut conflict detected for "${keyString}":\n` +
