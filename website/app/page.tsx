@@ -129,8 +129,7 @@ function ShortCutDialog() {
       </button>
       <ShortcutsDialog
         helpKey="?"
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+        theme="dark"
       />
       <button
         onClick={() => setShow(!show)}
