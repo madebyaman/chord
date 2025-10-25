@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui-components/react/dialog";
 import type { ReactNode } from "react";
 import XIcon from "./x-icon";
 
-interface DrawerRootProps {
+interface DrawerRootProps extends Dialog.Popup.Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
@@ -20,12 +20,12 @@ interface DrawerContentProps {
   children: ReactNode;
 }
 
-function DrawerRoot({ open, onOpenChange, children }: DrawerRootProps) {
+function DrawerRoot({ open, onOpenChange, children, ...props }: DrawerRootProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="drawer-backdrop" />
-        <Dialog.Popup className="drawer-popup">
+        <Dialog.Popup className="drawer-popup" {...props}>
           {children}
         </Dialog.Popup>
       </Dialog.Portal>

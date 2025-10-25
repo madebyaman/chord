@@ -42,8 +42,20 @@
     flex-direction: column;
     border: 1px solid rgb(209, 213, 219);
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    background-color: white;
-    color: rgb(17, 24, 39);
+
+    /* Theme variables - default to light */
+    --bg-primary: white;
+    --text-primary: rgb(17, 24, 39);
+    --bg-secondary: rgb(249, 250, 251);
+    --bg-hover: rgb(243, 244, 246);
+    --text-secondary: rgb(75, 85, 99);
+    --text-tertiary: rgb(55, 65, 81);
+    --border-color: rgb(209, 213, 219);
+    --border-color-light: rgb(229, 231, 235);
+
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
 }
 
 .drawer-popup[data-open] {
@@ -54,12 +66,16 @@
     animation: slideOutRight 200ms ease-in-out;
 }
 
-@media (prefers-color-scheme: dark) {
-    .drawer-popup {
-        background-color: rgb(23, 23, 23);
-        color: rgb(243, 244, 246);
-        border-color: rgb(64, 64, 64);
-    }
+/* Dark theme */
+.drawer-popup[style*="dark"] {
+    --bg-primary: rgb(23, 23, 23);
+    --text-primary: rgb(243, 244, 246);
+    --bg-secondary: rgb(38, 38, 38);
+    --bg-hover: rgb(38, 38, 38);
+    --text-secondary: rgb(156, 163, 175);
+    --text-tertiary: rgb(229, 231, 235);
+    --border-color: rgb(64, 64, 64);
+    --border-color-light: rgb(38, 38, 38);
 }
 
 /* Drawer Header */
@@ -71,25 +87,14 @@
     padding-left: 1rem;
     padding-right: 1rem;
     padding-top: 1rem;
-}
-
-@media (prefers-color-scheme: dark) {
-    .drawer-header {
-        border-color: rgb(64, 64, 64);
-    }
+    border-color: var(--border-color);
 }
 
 /* Drawer Title */
 .drawer-title {
     font-size: 1rem;
     font-weight: 600;
-    color: rgb(17, 24, 39);
-}
-
-@media (prefers-color-scheme: dark) {
-    .drawer-title {
-        color: rgb(243, 244, 246);
-    }
+    color: var(--text-primary);
 }
 
 /* Drawer Close Button */
@@ -98,23 +103,13 @@
     background: inherit !important;
     border: 0 !important;
     outline: 0;
-    color: rgb(75, 85, 99);
+    color: var(--text-secondary) !important;
     cursor: pointer;
 }
 
 .drawer-close:hover {
     border-radius: 0.125rem !important;
-    background-color: rgb(243, 244, 246) !important;
-}
-
-@media (prefers-color-scheme: dark) {
-    .drawer-close {
-        color: rgb(209, 213, 219) !important;
-    }
-
-    .drawer-close:hover {
-        background-color: rgb(38, 38, 38) !important;
-    }
+    background-color: var(--bg-hover) !important;
 }
 
 /* Drawer Close Icon */
@@ -129,13 +124,7 @@
     flex: 1;
     overflow: auto;
     padding: 1.25rem;
-    color: rgb(17, 24, 39);
-}
-
-@media (prefers-color-scheme: dark) {
-    .drawer-content {
-        color: rgb(243, 244, 246);
-    }
+    color: var(--text-primary);
 }
 
 /* X Icon */
@@ -157,15 +146,15 @@
     padding: 0.5rem 0.75rem;
     margin-bottom: 1rem;
     border-radius: 0.25rem;
-    border: 1px solid rgb(209, 213, 219);
+    border: 1px solid var(--border-color);
     font-size: 0.875rem;
     outline: none;
-    background-color: white;
-    color: rgb(17, 24, 39);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .shortcuts-search-input::placeholder {
-    color: rgb(107, 114, 128);
+    color: var(--text-secondary);
 }
 
 .shortcuts-search-input:focus {
@@ -173,27 +162,9 @@
     outline-offset: 2px;
 }
 
-@media (prefers-color-scheme: dark) {
-    .shortcuts-search-input {
-        background-color: rgb(38, 38, 38);
-        border-color: rgb(64, 64, 64);
-        color: rgb(243, 244, 246);
-    }
-
-    .shortcuts-search-input:focus {
-        outline-color: rgb(64, 64, 64);
-    }
-}
-
 /* Shortcuts Empty State */
 .shortcuts-empty {
-    color: rgb(75, 85, 99);
-}
-
-@media (prefers-color-scheme: dark) {
-    .shortcuts-empty {
-        color: rgb(156, 163, 175);
-    }
+    color: var(--text-secondary);
 }
 
 /* Shortcuts List */
@@ -215,13 +186,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 0.5rem;
-    color: rgb(75, 85, 99);
-}
-
-@media (prefers-color-scheme: dark) {
-    .shortcuts-category-title {
-        color: rgb(156, 163, 175);
-    }
+    color: var(--text-secondary);
 }
 
 /* Shortcuts Items */
@@ -238,29 +203,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgb(229, 231, 235);
+    border-bottom: 1px solid var(--border-color-light);
 }
 
 .shortcuts-item:last-child {
     border-bottom: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-    .shortcuts-item {
-        border-bottom-color: rgb(38, 38, 38);
-    }
-}
-
 /* Shortcuts Item Description */
 .shortcuts-item-description {
     font-size: 0.875rem;
-    color: rgb(55, 65, 81);
-}
-
-@media (prefers-color-scheme: dark) {
-    .shortcuts-item-description {
-        color: rgb(229, 231, 235);
-    }
+    color: var(--text-tertiary);
 }
 
 /* Shortcuts Item Keys */
@@ -274,22 +227,14 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    border: 1px solid rgb(209, 213, 219);
-    color: rgb(55, 65, 81);
-    background-color: rgb(249, 250, 251);
+    border: 1px solid var(--border-color);
+    color: var(--text-tertiary);
+    background-color: var(--bg-secondary);
     display: inline-flex;
     gap: 0.25rem;
     align-items: center;
     text-transform: uppercase;
     font-size: 0.875rem;
-}
-
-@media (prefers-color-scheme: dark) {
-    .shortcuts-kbd {
-        border-color: rgb(64, 64, 64);
-        color: rgb(229, 231, 235);
-        background-color: rgb(38, 38, 38);
-    }
 }
 
 /* Shortcuts Kbd Small */
@@ -301,13 +246,7 @@
 .shortcuts-footer {
     margin-top: 1rem;
     font-size: 0.75rem;
-    color: rgb(75, 85, 99);
-}
-
-@media (prefers-color-scheme: dark) {
-    .shortcuts-footer {
-        color: rgb(107, 114, 128);
-    }
+    color: var(--text-secondary);
 }
 
 /* Key Combo Part */

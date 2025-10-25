@@ -10,7 +10,7 @@ import { waitFor } from "@testing-library/react";
 
 describe("ShortcutsDialog", () => {
   describe("Rendering and visibility", () => {
-    it("renders when isOpen is true", async () => {
+    it("renders when open is true", async () => {
       const TestComponent = () => {
         useKeyPress({
           key: "k",
@@ -24,7 +24,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -33,10 +33,10 @@ describe("ShortcutsDialog", () => {
       });
     });
 
-    it("does not render when isOpen is false", () => {
+    it("does not render when open is false", () => {
       render(
         <KeyPressProvider>
-          <ShortcutsDialog isOpen={false} onClose={vi.fn()} />
+          <ShortcutsDialog open={false} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -46,12 +46,12 @@ describe("ShortcutsDialog", () => {
   });
 
   describe("Closing behavior", () => {
-    it("calls onClose when close button is clicked", async () => {
-      const onClose = vi.fn();
+    it("calls onOpenChange when close button is clicked", async () => {
+      const onOpenChange = vi.fn();
 
       const screen = render(
         <KeyPressProvider>
-          <ShortcutsDialog isOpen={true} onClose={onClose} />
+          <ShortcutsDialog open={true} onOpenChange={onOpenChange} />
         </KeyPressProvider>,
       );
 
@@ -62,32 +62,32 @@ describe("ShortcutsDialog", () => {
       const closeButton = screen.getByRole("button", { name: /close/i });
       await closeButton.click();
 
-      expect(onClose).toHaveBeenCalled();
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it("calls onClose when Escape is pressed", async () => {
+    it("calls onOpenChange when Escape is pressed", async () => {
       const user = userEvent.setup();
-      const onClose = vi.fn();
+      const onOpenChange = vi.fn();
 
       render(
         <KeyPressProvider>
-          <ShortcutsDialog isOpen={true} onClose={onClose} />
+          <ShortcutsDialog open={true} onOpenChange={onOpenChange} />
         </KeyPressProvider>,
       );
 
       await user.keyboard("{Escape}");
 
       await waitFor(() => {
-        expect(onClose).toHaveBeenCalled();
+        expect(onOpenChange).toHaveBeenCalledWith(false);
       });
     });
 
-    it("calls onClose when backdrop is clicked", async () => {
-      const onClose = vi.fn();
+    it("calls onOpenChange when backdrop is clicked", async () => {
+      const onOpenChange = vi.fn();
 
       render(
         <KeyPressProvider>
-          <ShortcutsDialog isOpen={true} onClose={onClose} />
+          <ShortcutsDialog open={true} onOpenChange={onOpenChange} />
         </KeyPressProvider>,
       );
 
@@ -95,7 +95,7 @@ describe("ShortcutsDialog", () => {
       await backdrop!.click();
 
       await waitFor(() => {
-        expect(onClose).toHaveBeenCalled();
+        expect(onOpenChange).toHaveBeenCalledWith(false);
       });
     });
   });
@@ -121,7 +121,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -134,7 +134,7 @@ describe("ShortcutsDialog", () => {
     it('shows "No shortcuts" when empty', async () => {
       const screen = render(
         <KeyPressProvider>
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -169,7 +169,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -208,7 +208,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -236,7 +236,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -274,7 +274,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -316,7 +316,7 @@ describe("ShortcutsDialog", () => {
       const screen = render(
         <KeyPressProvider>
           <TestComponent />
-          <ShortcutsDialog isOpen={true} onClose={vi.fn()} />
+          <ShortcutsDialog open={true} onOpenChange={vi.fn()} />
         </KeyPressProvider>,
       );
 
@@ -334,16 +334,16 @@ describe("ShortcutsDialog", () => {
   describe("helpKey prop", () => {
     it("opens and closes dialog when helpKey is pressed", async () => {
       const user = userEvent.setup();
-      let isOpen = false;
-      const onOpenChange = vi.fn((open: boolean) => {
-        isOpen = open;
+      let open = false;
+      const onOpenChange = vi.fn((newOpen: boolean) => {
+        open = newOpen;
       });
 
       const TestComponent = () => {
         return (
           <ShortcutsDialog
-            isOpen={isOpen}
-            onClose={() => onOpenChange(false)}
+            open={open}
+            onOpenChange={onOpenChange}
             helpKey="?"
           />
         );
@@ -360,7 +360,7 @@ describe("ShortcutsDialog", () => {
 
       // Press the help key to open
       await user.keyboard("?");
-      isOpen = true;
+      open = true;
 
       await waitFor(() => {
         expect(onOpenChange).toHaveBeenCalledWith(true);

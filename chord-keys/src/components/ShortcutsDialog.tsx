@@ -1,6 +1,7 @@
 import "./style.css";
 import { useState, useMemo } from "react";
 import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts";
+import { useSystemTheme } from "../hooks/use-system-theme";
 import Drawer from "./drawer";
 import {
   Command,
@@ -9,11 +10,13 @@ import {
   Delete,
   Option,
 } from "lucide-react";
+import { useKeyPress } from "../hooks/use-keypress";
 
 interface ShortcutsDialogProps {
   helpKey?: string;
-  isOpen: boolean;
-  onClose: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  theme?: "light" | "dark";
 }
 
 // Helper function to get icon for a single key part
@@ -64,11 +67,28 @@ const renderKeyCombo = (keyCombo: string, iconSize: number = 14) => {
 
 export const ShortcutsDialog = ({
   helpKey = "?",
-  isOpen,
-  onClose,
+  open,
+  onOpenChange,
+  theme,
 }: ShortcutsDialogProps) => {
   const { handlers, groupedHandlers } = useKeyboardShortcuts();
   const [searchQuery, setSearchQuery] = useState("");
+  const [internalOpen, setInternalOpen] = useState(false);
+  const systemTheme = useSystemTheme();
+
+  // Use external state if provided, otherwise use internal state
+  const isOpen = open ?? internalOpen;
+  const setIsOpen = onOpenChange ?? setInternalOpen;
+
+  // Use theme prop or fallback to system theme
+  const finalTheme = theme ?? systemTheme;
+
+  useKeyPress({
+    key: helpKey,
+    onPress: () => setIsOpen(!isOpen),
+    description: "Toggle shortcuts dialog",
+    preventDefault: true
+  });
 
   // Filter handlers based on search query
   const filteredHandlers = useMemo(() => {
@@ -101,7 +121,15 @@ export const ShortcutsDialog = ({
   }, [filteredHandlers, groupedHandlers, searchQuery]);
 
   return (
-    <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Drawer.Root
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      style={
+        {
+          "--shortcuts-theme": finalTheme,
+        } as React.CSSProperties
+      }
+    >
       <Drawer.Header>
         <Drawer.Title>Keyboard Shortcuts</Drawer.Title>
         <Drawer.Close />
