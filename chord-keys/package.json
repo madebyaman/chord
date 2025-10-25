@@ -30,11 +30,10 @@
   "scripts": {
     "lint": "eslint .",
     "test": "vitest",
-
-    "prepublishOnly": "cp ../README.md . && pnpm build",
-        "postpublish": "rm README.md",
-        "build": "tsup",
-        "dev": "tsup --watch"
+    "prepublishOnly": "cp ../README.md . && npm build",
+    "postpublish": "rm README.md",
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.4",

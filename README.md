@@ -1,9 +1,5 @@
 # chord
 
-[![npm version](https://img.shields.io/npm/v/chord-keys.svg)](https://www.npmjs.com/package/chord-keys)
-[![license](https://img.shields.io/npm/l/chord-keys.svg)](https://github.com/madebyaman/chord/blob/main/chord-keys/LICENSE)
-[![coverage](https://img.shields.io/codecov/c/github/madebyaman/chord)](https://codecov.io/gh/madebyaman/chord)
-
 a keyboard shortcuts library for react with built-in conflict detection and discoverable shortcuts.
 
 ## what is chord?
