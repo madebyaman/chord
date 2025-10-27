@@ -29,8 +29,10 @@ const getKeyIcon = (key: string, size: number = 14) => {
     lowerKey === "control" ||
     lowerKey === "cmd" ||
     lowerKey === "command" ||
-    lowerKey === "⌘"
+    lowerKey === "⌘" ||
+    lowerKey === "meta"
   ) {
+    console.log("cmd icon");
     return <Command {...iconProps} />;
   }
   if (lowerKey === "shift" || lowerKey === "⇧") {
@@ -87,7 +89,7 @@ export const ShortcutsDialog = ({
     key: helpKey,
     onPress: () => setIsOpen(!isOpen),
     description: "Toggle shortcuts dialog",
-    preventDefault: true
+    preventDefault: true,
   });
 
   // Filter handlers based on search query
@@ -156,9 +158,7 @@ export const ShortcutsDialog = ({
           <div className="shortcuts-list">
             {filteredGroupedHandlers.map(([category, categoryHandlers]) => (
               <div key={category} className="shortcuts-category">
-                <h3 className="shortcuts-category-title">
-                  {category}
-                </h3>
+                <h3 className="shortcuts-category-title">{category}</h3>
                 <ul className="shortcuts-items">
                   {categoryHandlers.map((handler) => (
                     <li

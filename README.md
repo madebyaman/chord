@@ -2,6 +2,8 @@
 
 a keyboard shortcuts library for react with built-in conflict detection and discoverable shortcuts.
 
+![chord-key demo](./screenshot.png)
+
 ## what is chord-key?
 
 chord-key makes keyboard shortcuts in react apps easy to manage. unlike typical key press hooks, chord-key provides:

@@ -1,257 +1,259 @@
 /* Animations */
 @keyframes slideRight {
-    from {
-        transform: translateX(10%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+  from {
+    transform: translateX(10%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(10%);
-        opacity: 0;
-    }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(10%);
+    opacity: 0;
+  }
 }
 
 /* Drawer Backdrop */
 .drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.06);
-    opacity: 0.95;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.06);
+  opacity: 0.95;
 }
 
 /* Drawer Popup */
 .drawer-popup {
-    position: fixed;
-    right: 0.5rem;
-    bottom: 0.5rem;
-    top: 0.5rem;
-    max-width: 24rem;
-    width: 40%;
-    border-radius: 0.125rem;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgb(209, 213, 219);
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  position: fixed;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  top: 0.5rem;
+  max-width: 24rem;
+  width: 40%;
+  border-radius: 0.125rem;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgb(209, 213, 219);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
-    /* Theme variables - default to light */
-    --bg-primary: white;
-    --text-primary: rgb(17, 24, 39);
-    --bg-secondary: rgb(249, 250, 251);
-    --bg-hover: rgb(243, 244, 246);
-    --text-secondary: rgb(75, 85, 99);
-    --text-tertiary: rgb(55, 65, 81);
-    --border-color: rgb(209, 213, 219);
-    --border-color-light: rgb(229, 231, 235);
+  /* Theme variables - default to light */
+  --bg-primary: white;
+  --text-primary: rgb(17, 24, 39);
+  --bg-secondary: rgb(249, 250, 251);
+  --bg-hover: rgb(243, 244, 246);
+  --text-secondary: rgb(75, 85, 99);
+  --text-tertiary: rgb(55, 65, 81);
+  --border-color: rgb(209, 213, 219);
+  --border-color-light: rgb(229, 231, 235);
 
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    border-color: var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
 .drawer-popup[data-open] {
-    animation: slideRight 200ms ease-in-out;
+  animation: slideRight 200ms ease-in-out;
 }
 
 .drawer-popup[data-closed] {
-    animation: slideOutRight 200ms ease-in-out;
+  animation: slideOutRight 200ms ease-in-out;
 }
 
 /* Dark theme */
 .drawer-popup[style*="dark"] {
-    --bg-primary: rgb(23, 23, 23);
-    --text-primary: rgb(243, 244, 246);
-    --bg-secondary: rgb(38, 38, 38);
-    --bg-hover: rgb(38, 38, 38);
-    --text-secondary: rgb(156, 163, 175);
-    --text-tertiary: rgb(229, 231, 235);
-    --border-color: rgb(64, 64, 64);
-    --border-color-light: rgb(38, 38, 38);
+  --bg-primary: rgb(23, 23, 23);
+  --text-primary: rgb(243, 244, 246);
+  --bg-secondary: rgb(38, 38, 38);
+  --bg-hover: rgb(38, 38, 38);
+  --text-secondary: rgb(156, 163, 175);
+  --text-tertiary: rgb(229, 231, 235);
+  --border-color: rgb(64, 64, 64);
+  --border-color-light: rgb(38, 38, 38);
 }
 
 /* Drawer Header */
 .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 1rem;
-    border-color: var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  border-color: var(--border-color);
 }
 
 /* Drawer Title */
 .drawer-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* Drawer Close Button */
 .drawer-close {
-    padding: 0.125rem !important;
-    background: inherit !important;
-    border: 0 !important;
-    outline: 0;
-    color: var(--text-secondary) !important;
-    cursor: pointer;
+  padding: 0.125rem !important;
+  background: inherit !important;
+  border: 0 !important;
+  outline: 0;
+  color: var(--text-secondary) !important;
+  cursor: pointer;
 }
 
 .drawer-close:hover {
-    border-radius: 0.125rem !important;
-    background-color: var(--bg-hover) !important;
+  border-radius: 0.125rem !important;
+  background-color: var(--bg-hover) !important;
 }
 
 /* Drawer Close Icon */
 .drawer-close-icon {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
 }
 
 /* Drawer Content */
 .drawer-content {
-    position: relative;
-    flex: 1;
-    overflow: auto;
-    padding: 1.25rem;
-    color: var(--text-primary);
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  padding: 1.25rem;
+  color: var(--text-primary);
 }
 
 /* X Icon */
 .x-icon {
-    width: 1.5rem;
-    height: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 /* Shortcuts Search Wrapper */
 .shortcuts-search-wrapper {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-    padding-top: 1rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  padding-top: 1rem;
 }
 
 /* Shortcuts Search Input */
 .shortcuts-search-input {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid var(--border-color);
-    font-size: 0.875rem;
-    outline: none;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  outline: none;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .shortcuts-search-input::placeholder {
-    color: var(--text-secondary);
+  color: var(--text-secondary);
 }
 
 .shortcuts-search-input:focus {
-    outline: 2px solid rgb(59, 130, 246);
-    outline-offset: 2px;
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
 }
 
 /* Shortcuts Empty State */
 .shortcuts-empty {
-    color: var(--text-secondary);
+  color: var(--text-secondary);
 }
 
 /* Shortcuts List */
 .shortcuts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Shortcuts Category */
 .shortcuts-category {
-    /* No specific styles needed, structure only */
+  /* No specific styles needed, structure only */
 }
 
 /* Shortcuts Category Title */
 .shortcuts-category-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-    color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
 }
 
 /* Shortcuts Items */
 .shortcuts-items {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* Shortcuts Item */
 .shortcuts-item {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color-light);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .shortcuts-item:last-child {
-    border-bottom: 0;
+  border-bottom: 0;
 }
 
 /* Shortcuts Item Description */
 .shortcuts-item-description {
-    font-size: 0.875rem;
-    color: var(--text-tertiary);
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
 }
 
 /* Shortcuts Item Keys */
 .shortcuts-item-keys {
-    display: flex;
-    gap: 0.25rem;
+  display: flex;
+  gap: 0.25rem;
 }
 
 /* Shortcuts Kbd */
 .shortcuts-kbd {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    border: 1px solid var(--border-color);
-    color: var(--text-tertiary);
-    background-color: var(--bg-secondary);
-    display: inline-flex;
-    gap: 0.25rem;
-    align-items: center;
-    text-transform: uppercase;
-    font-size: 0.875rem;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  border: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  background-color: var(--bg-secondary);
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  text-transform: uppercase;
+  font-size: 0.875rem;
 }
 
 /* Shortcuts Kbd Small */
 .shortcuts-kbd-small {
-    font-size: 0.75rem;
+  font-size: 0.75rem;
 }
 
 /* Shortcuts Footer */
 .shortcuts-footer {
-    margin-top: 1rem;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 /* Key Combo Part */
 .key-combo-part {
-    line-height: 1;
-    vertical-align: middle;
-    font-size: 1rem;
+  line-height: 1;
+  vertical-align: middle;
+  font-size: 0.875rem;
 }

@@ -1,1 +1,62 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@layer components {
+  .prose-docs {
+    @apply prose prose-slate max-w-none dark:prose-invert;
+  }
+
+  .prose-docs h2 {
+    @apply mt-8 mb-4 text-2xl font-bold text-slate-900 dark:text-white;
+  }
+
+  .prose-docs h3 {
+    @apply mt-6 mb-3 text-xl font-semibold text-slate-900 dark:text-white;
+  }
+
+  .prose-docs p {
+    @apply my-4 text-slate-700 dark:text-slate-300 leading-7;
+  }
+
+  .prose-docs code {
+    @apply bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono text-slate-900 dark:text-slate-100;
+  }
+
+  .prose-docs pre {
+    @apply bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+  .prose-docs pre code {
+    @apply bg-transparent px-0 py-0 rounded-none text-slate-100 dark:text-slate-100;
+  }
+
+  .prose-docs a {
+    @apply text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline;
+  }
+
+  .prose-docs ul,
+  .prose-docs ol {
+    @apply my-4 ml-6;
+  }
+
+  .prose-docs li {
+    @apply my-2 text-slate-700 dark:text-slate-300;
+  }
+
+  .prose-docs strong {
+    @apply font-semibold text-slate-900 dark:text-white;
+  }
+
+  .prose-docs table {
+    @apply my-4 w-full border-collapse border border-slate-300 dark:border-slate-700;
+  }
+
+  .prose-docs th,
+  .prose-docs td {
+    @apply border border-slate-300 dark:border-slate-700 px-4 py-2;
+  }
+
+  .prose-docs th {
+    @apply bg-slate-100 dark:bg-slate-800 font-semibold;
+  }
+}
