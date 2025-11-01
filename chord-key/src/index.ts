@@ -16,7 +16,6 @@ export type {
   ShortcutConflict,
   NormalizedKey,
   KeyPressProviderProps,
-  Platform,
 } from "./types";
 
 // Constants (optional, for advanced usage)

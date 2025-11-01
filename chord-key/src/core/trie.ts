@@ -1,4 +1,5 @@
-import type { EventType } from "../types";
+import type { EventType, NormalizedKey } from "../types";
+import { normalizeKeyName, serializeNormalizedKey } from "../utils/key-normalization";
 
 export class KeyNode {
   child: Map<string, KeyNode>;
@@ -54,6 +55,48 @@ export class KeyTrie {
    */
   search(key: string, node: KeyNode = this.root): KeyNode | null {
     return node.child.get(key) || null;
+  }
+
+  /**
+   * Search using a KeyboardEvent, handling shift key semantics
+   * If user pressed Shift to produce the key (like `?` from `Shift+/`) but the registered
+   * shortcut didn't include Shift, we try matching without the Shift key.
+   *
+   * @param event The keyboard event
+   * @param node The node to start from (default: root)
+   * @returns The child node if found, null otherwise
+   *
+   * @example
+   * // User presses Shift+? (which produces '?' on keyboard)
+   * // If shortcut is registered as just '?', we match it
+   * searchWithEvent(keyboardEvent) // returns the node for '?'
+   */
+  searchWithEvent(event: KeyboardEvent, node: KeyNode = this.root): KeyNode | null {
+    const normalizedKeyName = normalizeKeyName(event);
+
+    const normalized: NormalizedKey = {
+      key: normalizedKeyName,
+      meta: event.metaKey,
+      ctrl: event.ctrlKey,
+      shift: event.shiftKey,
+      alt: event.altKey,
+    };
+
+    const serialized = serializeNormalizedKey(normalized);
+
+    // Try the direct search first
+    let result = this.search(serialized, node);
+
+    if (!result && event.shiftKey) {
+      // If no match and shift was pressed, try without shift
+      // This handles the case where user pressed Shift to produce a character
+      // but the shortcut doesn't explicitly include Shift
+      const withoutShift: NormalizedKey = { ...normalized, shift: false };
+      const serializedWithoutShift = serializeNormalizedKey(withoutShift);
+      result = this.search(serializedWithoutShift, node);
+    }
+
+    return result;
   }
 
   /**

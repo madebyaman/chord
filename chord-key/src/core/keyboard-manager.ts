@@ -38,7 +38,7 @@ interface KeyboardHandler {
 export class KeyboardManager {
   public handlers: Map<number, KeyboardHandler> = new Map();
 
-  /** Persistent listeners for window only. Key is eventType like keydown. It  is used so we can have one listener per eventType. */
+  /** Persistent listeners for document only. Key is eventType like keydown. It  is used so we can have one listener per eventType. */
   private listeners: Map<string, ListenerGroup> = new Map();
 
   /** Trie for efficient key sequence matching */
@@ -53,7 +53,7 @@ export class KeyboardManager {
   /** Timeout timer for resetting state */
   private timer: NodeJS.Timeout | null = null;
 
-  /** Get or create listener group for window */
+  /** Get or create listener group for document */
   private getOrCreateListenerGroup(
     eventType: "keydown" | "keyup" | "keypress",
   ): ListenerGroup {
@@ -63,7 +63,7 @@ export class KeyboardManager {
     if (!group) {
       const boundHandler = this.createListenerHandler(eventType);
 
-      window.addEventListener(eventType, boundHandler);
+      document.addEventListener(eventType, boundHandler);
 
       group = {
         handlerIds: new Set(),
@@ -104,8 +104,8 @@ export class KeyboardManager {
   private runHandler(event: KeyboardEvent,  normalizedKey: string, eventType: EventType): void {
     const isAtRootNode = !this.currentNode
 
-    if (this.currentNode) this.currentNode = this.trie.search(normalizedKey, this.currentNode)
-    else this.currentNode = this.trie.search(normalizedKey)
+    if (this.currentNode) this.currentNode = this.trie.searchWithEvent(event, this.currentNode)
+    else this.currentNode = this.trie.searchWithEvent(event)
 
 
     // If no match found, reset state.
@@ -160,12 +160,28 @@ export class KeyboardManager {
     }
   }
 
+  private isTypingInInput(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null
+    if (!target) return false
+
+    const tag = target.tagName
+    const editable = target.getAttribute('contenteditable')
+
+    return (
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      editable === '' ||
+      editable === 'true'
+    )
+  }
+
 
   private createListenerHandler(
     eventType: "keydown" | "keyup" | "keypress",
   ): (e: Event) => void {
     return (event: Event) => {
       if (!(event instanceof KeyboardEvent)) return;
+      if (this.isTypingInInput(event)) return;
       const normalizedKey = normalizeEvent(event);
       return this.runHandler(event, normalizedKey, eventType)
     };
@@ -250,7 +266,7 @@ export class KeyboardManager {
 
       // If no more handlers for this group, remove the event listener
       if (group.handlerIds.size === 0) {
-        window.removeEventListener(handler.eventType, group.boundHandler);
+        document.removeEventListener(handler.eventType, group.boundHandler);
         this.listeners.delete(handler.listenerKey);
 
         // Clear state and timer if no listeners remain

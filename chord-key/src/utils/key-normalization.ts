@@ -56,7 +56,7 @@ const SPECIAL_KEY_MAP: Record<string, string> = {
  * // '+' symbol can't be stored, so convert to 'Plus'
  * normalizeKeyName({ key: '+' }) // 'Plus'
  */
-function normalizeKeyName(event: KeyboardEvent): string {
+export function normalizeKeyName(event: KeyboardEvent): string {
   const key = event.key
   if (modifierKeyNames.includes(key)) return key
   // When `Alt` is pressed Mac outputs symbols so convert back to valid key
@@ -80,7 +80,7 @@ export const modifierKeyNames: string[] = ['Control', 'Alt', 'Meta', 'Shift'] as
  * Serialize a NormalizedKey object to a string
  * Maintains consistent order: ctrl, alt,  meta, shift,  key
  */
-function serializeNormalizedKey(parts: NormalizedKey): string {
+export function serializeNormalizedKey(parts: NormalizedKey): string {
   const keyString: string[] = [];
 
   // Consistent order
