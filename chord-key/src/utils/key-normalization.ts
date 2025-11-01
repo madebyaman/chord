@@ -1,115 +1,97 @@
-import type { NormalizedKey, NormalizedKeyString, Platform } from "../types";
+import type { NormalizedKey, NormalizedKeyString  } from "../types";
+import { macosSymbolKeys, macosUppercaseKeys } from "./mac-symbols";
 
 /**
  * Get the current platform using modern APIs
  * Falls back to user agent parsing if navigator.userAgentData is unavailable
  */
-export function getPlatform(): Platform {
+export function isMac(): boolean {
   if (typeof window === "undefined") {
-    return "linux"; // SSR fallback
+    return false; // SSR fallback
   }
 
+  const matchApplePlatform = /Mac|iPod|iPhone|iPad/i;
+
   // Try modern API first (Chromium-based browsers)
-  if ("userAgentData" in navigator) {
-    const platform = (navigator as any).userAgentData?.platform?.toLowerCase();
-    if (platform) {
-      if (platform.includes("mac")) return "darwin";
-      if (platform.includes("win")) return "win32";
-      return "linux";
+  if ("userAgentData" in window.navigator) {
+    const userAgentData = (window.navigator as any).userAgentData;
+    if (userAgentData?.platform) {
+      const platform = userAgentData.platform.toLowerCase();
+      if (matchApplePlatform.test(platform)) return true;
+      return false;
     }
   }
 
   // Fallback to user agent string parsing
-  const userAgent = navigator.userAgent.toLowerCase();
+  const userAgent = navigator.userAgent;
 
-  if (userAgent.includes("mac")) {
-    return "darwin";
+  if (matchApplePlatform.test(userAgent)) {
+    return true;
   }
 
-  if (userAgent.includes("win")) {
-    return "win32";
-  }
-
-  // Check for Linux, Android, etc.
-  if (userAgent.includes("linux") || userAgent.includes("android")) {
-    return "linux";
-  }
-
-  return "linux"; // Default fallback
+  return false
 }
 
 /**
- * Check if the current platform is macOS
- */
-export function isMac(): boolean {
-  return getPlatform() === "darwin";
-}
-
-/**
- * Special key name mappings
+ * Special key name mappings for keys that can't be stored in string format
  */
 const SPECIAL_KEY_MAP: Record<string, string> = {
-  // Escape variations
-  esc: "escape",
-  escape: "escape",
-
-  // Enter variations
-  return: "enter",
-  enter: "enter",
-
-  // Space variations
-  " ": "space",
-  space: "space",
-  spacebar: "space",
-
-  // Arrow keys
-  up: "arrowup",
-  arrowup: "arrowup",
-  down: "arrowdown",
-  arrowdown: "arrowdown",
-  left: "arrowleft",
-  arrowleft: "arrowleft",
-  right: "arrowright",
-  arrowright: "arrowright",
-
-  // Delete/Backspace
-  delete: "delete",
-  del: "delete",
-  backspace: "backspace",
-
-  // Tab
-  tab: "tab",
-
-  // Other common keys
-  home: "home",
-  end: "end",
-  pageup: "pageup",
-  pagedown: "pagedown",
-  insert: "insert",
+  " ": "Space",
+  "+":"Plus"
 };
 
 /**
- * Normalize a key name (e.g., "Escape" -> "escape", " " -> "space")
+ * Normalize a keyboard event's key value to account for platform-specific behavior. Converts mac
+ *
+ * @param event - The keyboard event containing the key to normalize
+ * @returns The normalized key name ready for shortcut string format
+ *
+ * @example
+ * // Mac + Alt + 2 produces '™', but we need 'TM'
+ * normalizeKeyName({ key: '™', altKey: true }) // 'TM'
+ *
+ * // Mac + Cmd + Shift + k produces 'k', but we need 'K'
+ * normalizeKeyName({ key: 'k', metaKey: true, shiftKey: true }) // 'K'
+ *
+ * // '+' symbol can't be stored, so convert to 'Plus'
+ * normalizeKeyName({ key: '+' }) // 'Plus'
  */
-export function normalizeKeyName(key: string): string {
-  const lower = key.toLowerCase();
-  return SPECIAL_KEY_MAP[lower] || lower;
+function normalizeKeyName(event: KeyboardEvent): string {
+  const key = event.key
+  if (modifierKeyNames.includes(key)) return key
+  // When `Alt` is pressed Mac outputs symbols so convert back to valid key
+  const altNormalizedKey =
+    event.altKey && isMac() ? macosSymbolKeys[key] ?? key : key
+
+  // MacOS outputs lowercase characters when `Command+Shift` is held, so we map them back to uppercase if we can
+  const shiftNormalizedKey =
+    event.shiftKey && isMac()
+      ? macosUppercaseKeys[altNormalizedKey] ?? altNormalizedKey
+      : altNormalizedKey
+
+  // Some symbols can't be used because of hotkey string format, so we replace them with 'synthetic' named keys
+  const syntheticKey = SPECIAL_KEY_MAP[shiftNormalizedKey] ?? shiftNormalizedKey
+  return syntheticKey
 }
+
+export const modifierKeyNames: string[] = ['Control', 'Alt', 'Meta', 'Shift'] as const
 
 /**
  * Serialize a NormalizedKey object to a string
- * Maintains consistent order: ctrl, alt, shift, meta, key
+ * Maintains consistent order: ctrl, alt,  meta, shift,  key
  */
-export function serializeNormalizedKey(parts: NormalizedKey): string {
-  const modifiers: string[] = [];
+function serializeNormalizedKey(parts: NormalizedKey): string {
+  const keyString: string[] = [];
 
   // Consistent order
-  if (parts.ctrl) modifiers.push("ctrl");
-  if (parts.alt) modifiers.push("alt");
-  if (parts.shift) modifiers.push("shift");
-  if (parts.meta) modifiers.push("meta");
+  if (parts.ctrl) keyString.push(modifierKeyNames[0]);
+  if (parts.alt) keyString.push(modifierKeyNames[1]);
+  if (parts.meta) keyString.push(modifierKeyNames[2]);
+  if (parts.shift) keyString.push(modifierKeyNames[3]);
+  if (parts.key) keyString.push(parts.key)
 
-  return [...modifiers, parts.key].join("+");
+  return keyString.join('+')
+
 }
 
 /**
@@ -117,16 +99,23 @@ export function serializeNormalizedKey(parts: NormalizedKey): string {
  */
 export function parseShortcut(shortcut: string): string[] {
   return shortcut
-    .toLowerCase()
     .trim()
     .split("+")
     .map((part) => part.trim())
+    .map(part => {
+      // convert modifier to lowercase
+      if (modifiers.includes(part.toLowerCase())) return part.toLowerCase()
+      else return part
+    })
     .filter((part) => part.length > 0);
 }
 
+const modifiers = ["mod", "ctrl", "control", "meta", "cmd", "command", "alt", "option", "shift"];
+
 /**
- * Validate shortcut parts for conflicts
- * Throws error if invalid combinations are detected
+ * Validate shortcut parts for conflicts and warn about potential issues.
+ * Invalid combinations will be silently normalized (using only the first modifier),
+ * but we warn the developer to help catch configuration errors early.
  */
 export function validateShortcut(parts: string[]): void {
   const hasMod = parts.includes("mod");
@@ -134,47 +123,46 @@ export function validateShortcut(parts: string[]): void {
   const hasMeta = parts.includes("meta") || parts.includes("cmd") || parts.includes("command");
 
   if (hasMod && hasCtrl) {
-    throw new Error(
-      `Invalid shortcut: Cannot use 'mod' with 'ctrl' (resolves to 'ctrl+ctrl' on Windows/Linux)`,
+    console.warn(
+      `[Chord] Shortcut warning: Cannot use 'mod' with 'ctrl' together. The 'mod' will be used (resolves to 'ctrl' on Windows/Linux and 'meta' on macOS). Please remove 'ctrl' from: ${parts.join("+")}`,
     );
   }
 
   if (hasMod && hasMeta) {
-    throw new Error(
-      `Invalid shortcut: Cannot use 'mod' with 'meta'/'cmd' (resolves to 'meta+meta' on macOS)`,
+    console.warn(
+      `[Chord] Shortcut warning: Cannot use 'mod' with 'meta'/'cmd' together. The 'mod' will be used (resolves to 'meta' on macOS and 'ctrl' on Windows/Linux). Please remove 'meta'/'cmd' from: ${parts.join("+")}`,
     );
   }
 
   // Find the actual key (non-modifier)
-  const modifiers = ["mod", "ctrl", "control", "meta", "cmd", "command", "alt", "option", "shift"];
   const keys = parts.filter((part) => !modifiers.includes(part));
 
   if (keys.length === 0) {
-    throw new Error(`Invalid shortcut: No key specified (only modifiers)`);
+    console.warn(`[Chord] Shortcut warning: No key specified, only modifiers in: ${parts.join("+")}`);
   }
 
   if (keys.length > 1) {
-    throw new Error(`Invalid shortcut: Multiple keys specified (${keys.join(", ")})`);
+    console.warn(`[Chord] Shortcut warning: Multiple keys specified (${keys.join(", ")}). Only the first will be used in: ${parts.join("+")}`);
   }
 }
 
 /**
- * Normalize a shortcut string (e.g., from useKeyPress)
+ * Normalize a shortcut string (e.g., from useKeyPress or useKeySequence)
  * Converts platform-agnostic shortcuts to platform-specific normalized strings
  *
- * @param shortcut - The shortcut string (e.g., "mod+s", "ctrl+shift+k")
- * @param platform - The target platform (defaults to current platform)
+ * @param shortcut - The shortcut string (e.g., "meta+s", "ctrl+shift+k")
+ * @param isMac - If target platform is mac or darwin
  * @returns Normalized key string (e.g., "meta+s", "ctrl+shift+k")
  *
  * @example
- * normalizeShortcut("mod+s", "darwin") // "meta+s"
- * normalizeShortcut("mod+s", "win32") // "ctrl+s"
- * normalizeShortcut("cmd+k", "darwin") // "meta+k"
- * normalizeShortcut("shift+mod+k", "darwin") // "shift+meta+k" (sorted)
+ * normalizeShortcut("mod+s", true) // "Meta+s"
+ * normalizeShortcut("meta+s", false) // "ctrl+s"
+ * normalizeShortcut("cmd+k", true) // "meta+k"
+ * normalizeShortcut("shift+mod+k",true) // "shift+meta+k" (sorted)
  */
 export function normalizeShortcut(
   shortcut: string,
-  platform: Platform = getPlatform(),
+  isMac: boolean,
 ): NormalizedKeyString {
   const parts = parseShortcut(shortcut);
 
@@ -192,9 +180,11 @@ export function normalizeShortcut(
 
   for (const part of parts) {
     switch (part) {
-      // Mod resolution (platform-dependent)
+      // Mod will resolve to meta in mac. Otherwise ctrl
       case "mod":
-        if (platform === "darwin") {
+      case "cmd":
+      case "command":
+        if (isMac) {
           normalized.meta = true;
         } else {
           normalized.ctrl = true;
@@ -203,10 +193,7 @@ export function normalizeShortcut(
 
       // Meta aliases
       case "meta":
-      case "cmd":
-      case "command":
-        if (platform !== "darwin" && ["cmd", "command"].includes(part)) normalized.ctrl = true;
-        else normalized.meta = true;
+        normalized.meta = true;
         break;
 
       // Ctrl aliases
@@ -228,82 +215,45 @@ export function normalizeShortcut(
       // Everything else is the key
       default:
         if (!normalized.key) {
-          normalized.key = normalizeKeyName(part);
+          normalized.key = part;
         }
         break;
     }
-  }
-
-  // Check for duplicate modifiers after resolution
-  const activeModifiers = [
-    normalized.ctrl && "ctrl",
-    normalized.alt && "alt",
-    normalized.shift && "shift",
-    normalized.meta && "meta",
-  ].filter(Boolean);
-
-  const uniqueModifiers = [...new Set(activeModifiers)];
-  if (activeModifiers.length !== uniqueModifiers.length) {
-    throw new Error(`Invalid shortcut '${shortcut}': Duplicate modifiers detected`);
   }
 
   return serializeNormalizedKey(normalized);
 }
 
 /**
- * Characters that inherently require shift to type on a standard US keyboard
- * These are the shifted versions of number and symbol keys
- */
-const SHIFT_REQUIRED_CHARS = new Set([
-  "!", "@", "#", "$", "%", "^", "&", "*", "(", ")",
-  "_", "+", "{", "}", "|", ":", '"', "<", ">", "?", "~"
-]);
-
-/**
- * Check if shift modifier should be ignored for this key
- * We ignore shift when the key itself already represents a shifted character
- */
-function shouldIgnoreShift(key: string): boolean {
-  // Ignore shift for uppercase letters (A-Z)
-  if (key.length === 1 && key >= 'A' && key <= 'Z') {
-    return true;
-  }
-
-  // Ignore shift for characters that require shift to type
-  if (SHIFT_REQUIRED_CHARS.has(key)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
  * Normalize a keyboard event to a comparable string
  *
  * @param event - The keyboard event
- * @returns Normalized key string (e.g., "ctrl+shift+k", "meta+s")
+ * @returns Normalized key string (e.g., "ctrl+shift+k", "ctrl+S")
  *
  * @example
  * // User presses cmd+s on Mac
  * normalizeEvent({ key: 's', metaKey: true }) // "meta+s"
  *
- * // User presses ctrl+shift+k on Windows
- * normalizeEvent({ key: 'k', ctrlKey: true, shiftKey: true }) // "ctrl+shift+k"
+ * // User presses ctrl+shift+k
+ * normalizeEvent({ key: 'k', ctrlKey: true, shiftKey: true }) // "ctrl+K"
  *
  * // User presses ? (which requires shift on US keyboards)
- * normalizeEvent({ key: '?', shiftKey: true }) // "?" (shift is ignored)
+ * normalizeEvent({ key: '?', shiftKey: true }) // "?"
  *
  * // User presses ctrl+?
- * normalizeEvent({ key: '?', shiftKey: true, ctrlKey: true }) // "ctrl+?" (shift is still ignored)
+ * normalizeEvent({ key: '?', shiftKey: false, ctrlKey: true }) // "ctrl+?"
+ *
+ * // User presses +
+ * normalizeEvent({ key: '+'  }) // "Plus"
  */
 export function normalizeEvent(event: KeyboardEvent): NormalizedKeyString {
-  const normalizedKeyName = normalizeKeyName(event.key);
+  const normalizedKeyName = normalizeKeyName(event);
 
   const normalized: NormalizedKey = {
     key: normalizedKeyName,
     meta: event.metaKey,
     ctrl: event.ctrlKey,
-    shift: event.shiftKey && !shouldIgnoreShift(event.key),
+    shift: event.shiftKey,
     alt: event.altKey,
   };
 
@@ -326,7 +276,44 @@ export function normalizeEvent(event: KeyboardEvent): NormalizedKeyString {
 export function areShortcutsEqual(
   shortcut1: string,
   shortcut2: string,
-  platform?: Platform,
+  isMac: boolean
 ): boolean {
-  return normalizeShortcut(shortcut1, platform) === normalizeShortcut(shortcut2, platform);
+  return normalizeShortcut(shortcut1, isMac) === normalizeShortcut(shortcut2, isMac);
 }
+
+/**
+ * Checks the user key press with a registered shortcut string.
+ * If user pressed Shift to produce the key (like `?` or `A`) but the registered
+ * shortcut didn't include Shift, we ignore the Shift key when comparing.
+ *
+ * Example:
+ *  - user presses Shift + / → event.key = '?'
+ *  - shortcut is '?'
+ *  ✅ should match, even though Shift was pressed
+ */
+ export function compareEventWithShortcut(event: KeyboardEvent, shortcut: string): boolean {
+   const normalizedKeyName = normalizeKeyName(event);
+
+   const normalized: NormalizedKey = {
+     key: normalizedKeyName,
+     meta: event.metaKey,
+     ctrl: event.ctrlKey,
+     shift: event.shiftKey,
+     alt: event.altKey,
+   };
+
+   const serialized = serializeNormalizedKey(normalized);
+   const hasShiftInShortcut = shortcut.includes(modifierKeyNames[3]);
+
+   // If shortcut already includes Shift or user didn't press it — compare normally
+   if (hasShiftInShortcut || !normalized.shift) {
+     return serialized === shortcut;
+   }
+
+   // Otherwise, shortcut doesn’t have Shift but user pressed it
+   // → Try comparing again but ignoring the shift key
+   const withoutShift: NormalizedKey = { ...normalized, shift: false };
+   const serializedWithoutShift = serializeNormalizedKey(withoutShift);
+
+   return serializedWithoutShift === shortcut;
+ }

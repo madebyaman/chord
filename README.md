@@ -351,3 +351,7 @@ contributions are welcome! please open an issue or submit a pull request at [git
 MIT - see [LICENSE](LICENSE) for details.
 
 **author:** madebyaman
+
+## consideration
+
+- If key registered is a key that requires shiftKey (for example: useKeyPress({key: "?"})) and there is no shift, in that case while checking we ignore the shiftKey.

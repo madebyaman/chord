@@ -100,9 +100,9 @@ describe("normalizeShortcut - modifier key mapping", () => {
     expect(normalizeShortcut("mod+s", false)).toBe("Control+s");
   });
 
-  it("cmd/command maps to Meta on all platforms (preserved as explicit meta)", () => {
+  it("cmd/command maps to Meta on mac and ctrl on others", () => {
     expect(normalizeShortcut("cmd+k", true)).toBe("Meta+k");
-    expect(normalizeShortcut("cmd+k", false)).toBe("Meta+k");
+    expect(normalizeShortcut("cmd+k", false)).toBe("Control+k");
     expect(normalizeShortcut("command+k", true)).toBe("Meta+k");
   });
 
