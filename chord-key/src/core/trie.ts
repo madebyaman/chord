@@ -142,10 +142,5 @@ export class KeyTrie {
 
     // Remove handler from the event type set
     node.handlersByEventType.delete(eventType);
-
-    // Cleanup: mark as non-terminal if no handlers remain
-    if (node.handlersByEventType.size === 0) {
-      node.isEnd = false;
-    }
   }
 }
