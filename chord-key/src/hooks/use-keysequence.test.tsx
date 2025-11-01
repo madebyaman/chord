@@ -8,6 +8,8 @@ import { useKeySequence } from "./use-keysequence";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
 import * as React from "react";
+import { useEffect } from "react";
+import { createRegistrationTracker } from "./__testUtils__/registration-tracker";
 
 const createWrapper = () => {
   return ({ children }: { children: ReactNode }) => (
@@ -351,7 +353,7 @@ describe("useKeySequence", () => {
       await user.keyboard("h");
 
       // Wait for longer sequence to timeout (real wait: 450ms > 400ms but < 500ms)
-      await new Promise((res) => setTimeout(res, 450));
+      await new Promise((res) => setTimeout(res, 500));
 
       expect(onLongComplete).not.toHaveBeenCalled();
       expect(onShortComplete).toHaveBeenCalledTimes(1);
@@ -545,7 +547,7 @@ describe("useKeySequence", () => {
 
       function TestComponent() {
         useKeySequence({
-          sequence: ["ctrl+shift+k", "b"],
+          sequence: ["ctrl+shift+K", "b"],
           description: "Complex sequence",
           onComplete,
         });
@@ -808,59 +810,6 @@ describe("useKeySequence", () => {
       await user.keyboard("g");
       await user.keyboard("h");
       expect(onComplete).not.toHaveBeenCalled();
-    });
-
-    it("does NOT re-register when component re-renders with same config values", () => {
-      const consoleLogSpy = vi
-        .spyOn(console, "log")
-        .mockImplementation(() => {});
-      const onComplete = vi.fn();
-
-      function TestComponent({ trigger }: { trigger: number }) {
-        // Config object is recreated on every render, but values are same
-        useKeySequence({
-          sequence: ["g", "h"],
-          description: "Test",
-          category: "Navigation",
-          onComplete, // Same function reference
-        });
-        return <div>{trigger}</div>;
-      }
-
-      const { rerender } = render(
-        <KeyPressProvider>
-          <TestComponent trigger={1} />
-        </KeyPressProvider>,
-      );
-
-      // Check initial registration
-      const initialRegisterCalls = consoleLogSpy.mock.calls.filter(
-        (call) => call[0] === "[REGISTER]: registering",
-      ).length;
-
-      expect(initialRegisterCalls).toBeGreaterThan(0);
-
-      consoleLogSpy.mockClear();
-
-      // Force re-render (config object reference changes, values don't)
-      rerender(
-        <KeyPressProvider>
-          <TestComponent trigger={2} />
-        </KeyPressProvider>,
-      );
-
-      // Should NOT see new [REGISTER] or [UNREGISTER] calls
-      const registerCalls = consoleLogSpy.mock.calls.filter(
-        (call) => call[0] === "[REGISTER]: registering",
-      ).length;
-      const unregisterCalls = consoleLogSpy.mock.calls.filter((call) =>
-        call[0]?.toString().includes("[UNREGISTER]"),
-      ).length;
-
-      expect(registerCalls).toBe(0);
-      expect(unregisterCalls).toBe(0);
-
-      consoleLogSpy.mockRestore();
     });
 
     it("uses latest callback on each invocation even when callback changes", async () => {

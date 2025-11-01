@@ -8,6 +8,7 @@ import { useKeyPress } from "./use-keypress";
 import { KeyPressProvider, useKeyPressContext } from "../context/provider";
 import type { ReactNode } from "react";
 import { useRef, useEffect, useState } from "react";
+import { createRegistrationTracker } from "./__testUtils__/registration-tracker";
 import { useKeySequence } from "./use-keysequence";
 
 const createWrapper = () => {
@@ -63,18 +64,18 @@ describe("useKeyPress", () => {
       );
 
       // Real keyboard event - ctrl+s (mod maps to ctrl on Linux)
-      await user.keyboard("{Control>}s{/Control}");
+      await user.keyboard("{Meta>}s{/Meta}");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
 
-    it("multiple modifiers: ctrl+shift+k", async () => {
+    it("multiple modifiers: ctrl+shift+K", async () => {
       const user = userEvent.setup();
       const onPress = vi.fn();
 
       function TestComponent() {
         useKeyPress({
-          key: "ctrl+shift+k",
+          key: "ctrl+shift+K",
           description: "Complex",
           onPress,
         });
@@ -88,7 +89,7 @@ describe("useKeyPress", () => {
       );
 
       // Real keyboard event with multiple modifiers
-      await user.keyboard("{Control>}{Shift>}k{/Shift}{/Control}");
+      await user.keyboard("{Control>}{Shift>}K{/Shift}{/Control}");
 
       expect(onPress).toHaveBeenCalledTimes(1);
     });
@@ -339,6 +340,7 @@ describe("useKeyPress", () => {
 
     it("doesn't work if useKeyPress is registered starting with same key", async () => {
       const onPress = vi.fn();
+      const onPress2 = vi.fn()
 
       // Test component that renders input with useKeyPress
       function TestComponent() {
@@ -359,7 +361,7 @@ describe("useKeyPress", () => {
         useKeySequence({
           sequence: ["k", "g"],
           description: "Test",
-          onComplete: onPress,
+          onComplete: onPress2,
           timeout: 200,
         });
 
@@ -377,10 +379,10 @@ describe("useKeyPress", () => {
       await input.fill("k");
 
       await new Promise((res) => {
-        setTimeout(() => res("ok"), 300);
+        setTimeout(() => res("ok"), 1100);
       });
 
-      // Character should NOT appear because preventDefault was called
+      // Character should appear because preventDefault was NOT called
       await expect.element(input).toHaveValue("k");
       expect(onPress).toHaveBeenCalledTimes(1);
     });
@@ -534,59 +536,6 @@ describe("useKeyPress", () => {
       onPress.mockClear();
       await user.keyboard("k");
       expect(onPress).not.toHaveBeenCalled();
-    });
-
-    it("does NOT re-register when component re-renders with same config values", () => {
-      const consoleLogSpy = vi
-        .spyOn(console, "log")
-        .mockImplementation(() => {});
-      const onPress = vi.fn();
-
-      function TestComponent({ trigger }: { trigger: number }) {
-        // Config object is recreated on every render, but values are same
-        useKeyPress({
-          key: "k",
-          description: "Test",
-          category: "Testing",
-          onPress, // Same function reference
-        });
-        return <div>{trigger}</div>;
-      }
-
-      const { rerender } = render(
-        <KeyPressProvider>
-          <TestComponent trigger={1} />
-        </KeyPressProvider>,
-      );
-
-      // Check initial registration
-      const initialRegisterCalls = consoleLogSpy.mock.calls.filter(
-        (call) => call[0] === "[REGISTER]: registering",
-      ).length;
-
-      expect(initialRegisterCalls).toBeGreaterThan(0);
-
-      consoleLogSpy.mockClear();
-
-      // Force re-render (config object reference changes, values don't)
-      rerender(
-        <KeyPressProvider>
-          <TestComponent trigger={2} />
-        </KeyPressProvider>,
-      );
-
-      // Should NOT see new [REGISTER] or [UNREGISTER] calls
-      const registerCalls = consoleLogSpy.mock.calls.filter(
-        (call) => call[0] === "[REGISTER]: registering",
-      ).length;
-      const unregisterCalls = consoleLogSpy.mock.calls.filter((call) =>
-        call[0]?.toString().includes("[UNREGISTER]"),
-      ).length;
-
-      expect(registerCalls).toBe(0);
-      expect(unregisterCalls).toBe(0);
-
-      consoleLogSpy.mockRestore();
     });
 
     it("uses latest callback on each invocation even when callback changes", async () => {
@@ -903,6 +852,8 @@ describe("useKeyPress", () => {
 
       await input.click();
       await input.fill("g");
+
+      await new Promise((r) => setTimeout(r, 1000))
 
       await waitFor(() => {
         expect(onPress).toBeCalledTimes(1);

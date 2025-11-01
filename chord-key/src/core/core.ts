@@ -142,6 +142,7 @@ export class ChordCore {
       description: handler.description,
       category: handler.category,
       component: handler.component,
+      // id: handler.id
     }));
   }
 

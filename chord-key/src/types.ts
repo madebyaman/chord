@@ -1,3 +1,4 @@
+export type EventType = 'keydown' | 'keyup' | 'keypress'
 /**
  * Base keyboard handler configuration
  */
@@ -31,7 +32,7 @@ export interface KeyPressConfig extends BaseKeyConfig {
   onPress: () => void;
 
   /** Event type (default: keydown) */
-  eventType?: "keydown" | "keyup" | "keypress";
+  eventType?: EventType;
 
   /** Whether to prevent default browser behavior (only works when `key` doesn't match a key sequence key.) */
   preventDefault?: boolean;
@@ -51,7 +52,7 @@ export interface KeySequenceConfig extends BaseKeyConfig {
   timeout?: number;
 
   /** Event type (default: keydown) */
-  eventType?: "keydown" | "keyup" | "keypress";
+  eventType?: EventType;
 }
 
 /**
@@ -65,7 +66,7 @@ export interface ListenerGroup {
   boundHandler: (e: Event) => void;
 
   /** Event type (keydown, keyup, keypress) */
-  eventType: "keydown" | "keyup" | "keypress";
+  eventType: EventType;
 }
 
 /**
@@ -78,11 +79,6 @@ export interface ShortcutConflict {
   /** All handlers registered for this key */
   handlers: HandlerInfo[];
 }
-
-/**
- * Platform types for key normalization
- */
-export type Platform = "darwin" | "win32" | "linux";
 
 /**
  * Normalized key representation for cross-platform compatibility
@@ -130,4 +126,5 @@ export interface HandlerInfo {
   /** Category for grouping */
   category: string;
   component: string;
+  // id: string;
 }

@@ -1,10 +1,13 @@
 import { DEFAULT_TIMEOUT, DEFAULTS } from "../utils/constants";
 import type {
+  EventType,
   KeyPressConfig,
   KeySequenceConfig,
   ListenerGroup,
 } from "../types";
 import { normalizeShortcut, normalizeEvent } from "../utils/key-normalization";
+import { KeyNode, KeyTrie } from "./trie";
+import { invariant } from "../utils/invariant";
 
 /**
  * Internal representation of a registered keyboard handler
@@ -38,10 +41,16 @@ export class KeyboardManager {
   /** Persistent listeners for window only. Key is eventType like keydown. It  is used so we can have one listener per eventType. */
   private listeners: Map<string, ListenerGroup> = new Map();
 
-  /** Current sequence buffer (normalized keys) */
-  private buffer: { key: string; time: number }[] = [];
+  /** Trie for efficient key sequence matching */
+  private trie: KeyTrie = new KeyTrie();
 
-  /** Timeout timer for resetting buffer */
+  /** Current position in the trie (replaces buffer) */
+  private currentNode: KeyNode | null = null;
+
+  /** Array of timestamps for each keystroke in the sequence */
+  private timestamps: number[] = [];
+
+  /** Timeout timer for resetting state */
   private timer: NodeJS.Timeout | null = null;
 
   /** Get or create listener group for window */
@@ -68,135 +77,97 @@ export class KeyboardManager {
     return group;
   }
 
-  private clearBuffer(): void {
-    this.buffer = [];
+  private clearState(): void {
+    this.currentNode = null;
+    this.timestamps = [];
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
   }
 
-  private getEnabledHandlers(listenerKey: string): KeyboardHandler[] {
-    const group = this.listeners.get(listenerKey);
-    if (!group) return [];
+  private hasTimeElapsedForHandler(handler: KeyboardHandler): boolean {
+    if (this.timestamps.length === 0) return false;
 
-    const handlers: KeyboardHandler[] = [];
-    for (const id of group.handlerIds) {
-      const handler = this.handlers.get(id);
-      if (handler && handler.enabled) {
-        handlers.push(handler);
+    // Build timeoutPairs: [0, diff1, diff2, ...]
+    const timeoutPairs: number[] = [0];
+    for (let i = 1; i < this.timestamps.length; i++) {
+      timeoutPairs.push(this.timestamps[i] - this.timestamps[i - 1]);
+    }
+
+
+    // Find the longest interval between any two consecutive keys
+    const maxInterval = Math.max(...timeoutPairs);
+    return maxInterval > handler.timeout;
+  }
+
+  private runHandler(event: KeyboardEvent,  normalizedKey: string, eventType: EventType): void {
+    const isAtRootNode = !this.currentNode
+
+    if (this.currentNode) this.currentNode = this.trie.search(normalizedKey, this.currentNode)
+    else this.currentNode = this.trie.search(normalizedKey)
+
+
+    // If no match found, reset state.
+    if (!this.currentNode) {
+      this.clearState();
+      return;
+    }
+
+    const handlerId = this.trie.getHandlerIds(this.currentNode, eventType);
+    const hasChildren = this.currentNode.child.size > 0
+
+
+    // 4 cases
+    if (handlerId) {
+      const handler = this.handlers.get(handlerId)
+      invariant(handler, 'No handler found')
+      this.timestamps.push(Date.now())
+      const hasTimeElapsed = this.hasTimeElapsedForHandler(handler)
+      // If time has elapsed, start fresh
+      if (hasTimeElapsed) {
+        // start fresh
+        this.clearState()
+        if (!isAtRootNode) return this.runHandler(event, normalizedKey, eventType)
+        else return;
       }
+      if (hasChildren) {
+        // wait for next keys
+        // If no key pressed, then execute the handler + reset state
+        // Else, setTimeout for executing
+        this.timer = setTimeout(() => {
+          this.clearState()
+          handler?.callback()
+        }, handler?.timeout)
+      } else {
+        // simply execute
+        const shouldPreventDefault = handler.preventDefault
+        if (shouldPreventDefault) {
+          event.preventDefault();
+        }
+        handler?.callback()
+        this.clearState()
+      }
+    } else if (hasChildren) {
+      // wait for next keys
+      this.timestamps.push(Date.now());
+      return;
+    } else {
+      // reset the state. start fresh from this key
+      this.clearState()
+      if (!isAtRootNode) return this.runHandler(event, normalizedKey, eventType)
+      else return
     }
-    return handlers;
   }
 
-  private matchesSequence(
-    buffer: typeof this.buffer,
-    handler: KeyboardHandler,
-  ): "full" | "partial" | "none" {
-    const sequence = handler.sequence;
-    if (buffer.length > sequence.length) return "none";
-
-    for (let i = 0; i < buffer.length; i++) {
-      if (buffer[i].key !== sequence[i]) return "none";
-    }
-
-    // compare timeout
-    const timeout = handler.timeout;
-    const timePairs: number[] = buffer.map((b) => b.time);
-    const timeoutPairs = timePairs.map((t) => t - buffer[0].time);
-    const maxTimeout = Math.max(...timeoutPairs);
-    if (maxTimeout > timeout) return "none";
-
-    return buffer.length === sequence.length ? "full" : "partial";
-  }
 
   private createListenerHandler(
     eventType: "keydown" | "keyup" | "keypress",
   ): (e: Event) => void {
     return (event: Event) => {
       if (!(event instanceof KeyboardEvent)) return;
-
       const normalizedKey = normalizeEvent(event);
-      const listenerKey = eventType;
-
-      this.buffer.push({ key: normalizedKey, time: Date.now() });
-
-      const enabledHandlers = this.getEnabledHandlers(listenerKey);
-
-      if (enabledHandlers.length === 0) {
-        this.clearBuffer();
-        return;
-      }
-
-      const fullMatches: KeyboardHandler[] = [];
-      const partialMatches: KeyboardHandler[] = [];
-
-      for (const handler of enabledHandlers) {
-        const match = this.matchesSequence(this.buffer, handler);
-        if (match === "full") {
-          fullMatches.push(handler);
-        } else if (match === "partial") {
-          partialMatches.push(handler);
-        }
-      }
-
-      // Execute full matches
-      if (fullMatches.length > 0) {
-        if (partialMatches.length > 0) {
-          // Ambiguous case: "g" matches but "g h" might also match
-          // We need to wait before executing to see if the sequence continues
-          // Note: preventDefault cannot be applied here since we need to wait
-          const maxTimeout = Math.max(...partialMatches.map((h) => h.timeout));
-          if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = null;
-          }
-
-          // Set new timer (keep buffer for continuation)
-          this.timer = setTimeout(() => {
-            this.clearBuffer();
-            for (const handler of fullMatches) {
-              handler.callback();
-            }
-          }, maxTimeout);
-          return;
-        }
-
-        // Unambiguous case: can preventDefault if requested
-        const shouldPreventDefault = fullMatches.some((h) => h.preventDefault);
-        if (shouldPreventDefault) {
-          event.preventDefault();
-        }
-
-        for (const handler of fullMatches) {
-          handler.callback();
-        }
-        this.clearBuffer();
-        return;
-      }
-
-      // If partial matches exist, wait for continuation
-      if (partialMatches.length > 0) {
-        // Use maximum timeout among all partial matches
-        const maxTimeout = Math.max(...partialMatches.map((h) => h.timeout));
-
-        // Clear existing timer and start new one
-        if (this.timer) {
-          clearTimeout(this.timer);
-          this.timer = null;
-        }
-
-        // Set new timer (keep buffer for continuation)
-        this.timer = setTimeout(() => {
-          this.clearBuffer();
-        }, maxTimeout);
-
-        return;
-      }
-
-      // No matches - reset buffer
-      this.clearBuffer();
+      return this.runHandler(event, normalizedKey, eventType)
     };
   }
 
@@ -254,6 +225,9 @@ export class KeyboardManager {
     const group = this.getOrCreateListenerGroup(eventType);
     group.handlerIds.add(id);
 
+    // Insert into trie for efficient lookup
+    this.trie.insert(sequence, id, eventType);
+
     return handler;
   }
 
@@ -264,6 +238,9 @@ export class KeyboardManager {
   unregister(id: number): void {
     const handler = this.handlers.get(id);
     if (!handler) return;
+
+    // Remove from trie
+    this.trie.remove(handler.sequence, handler.eventType);
 
     // Remove from listener group
     const group = this.listeners.get(handler.listenerKey);
@@ -276,9 +253,9 @@ export class KeyboardManager {
         window.removeEventListener(handler.eventType, group.boundHandler);
         this.listeners.delete(handler.listenerKey);
 
-        // Clear buffer and timer if no listeners remain
+        // Clear state and timer if no listeners remain
         if (this.listeners.size === 0) {
-          this.clearBuffer();
+          this.clearState();
         }
       }
     }

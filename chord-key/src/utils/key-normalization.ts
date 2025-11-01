@@ -162,7 +162,7 @@ export function validateShortcut(parts: string[]): void {
  */
 export function normalizeShortcut(
   shortcut: string,
-  isMac: boolean,
+  isPlatformMac: boolean = isMac(),
 ): NormalizedKeyString {
   const parts = parseShortcut(shortcut);
 
@@ -184,7 +184,7 @@ export function normalizeShortcut(
       case "mod":
       case "cmd":
       case "command":
-        if (isMac) {
+        if (isPlatformMac) {
           normalized.meta = true;
         } else {
           normalized.ctrl = true;
